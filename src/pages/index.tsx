@@ -1,3 +1,4 @@
+import { Message } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import pusherJs from 'pusher-js';
 import * as React from 'react';
@@ -10,15 +11,13 @@ import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-import { Message } from '@/types/message';
-
 const rep =
   typeof window !== 'undefined'
     ? new Replicache({
         name: 'chat-user-id',
         licenseKey: TEST_LICENSE_KEY,
-        pushURL: '/api/replicache-push',
-        pullURL: '/api/replicache-pull',
+        pushURL: '/api/v2/push?realmId=clarence',
+        pullURL: '/api/v2/pull?realmId=clarence',
         mutators: mutators,
       })
     : null;
@@ -47,7 +46,7 @@ export default function HomePage() {
     rep,
     async (tx) => {
       const list = await tx
-        .scan<Message>({ prefix: 'message/' })
+        .scan<Message>({ prefix: 'clarence/message/' })
         .entries()
         .toArray();
       list.sort(([, { order: a }], [, { order: b }]) => a - b);
@@ -89,7 +88,7 @@ export default function HomePage() {
               onSubmit={onSubmit}
               className='flex flex-col items-start space-y-2'
             >
-              <input ref={usernameRef} required /> says:{' '}
+              <input ref={usernameRef} defaultValue='Clarence' required /> says:{' '}
               <input ref={contentRef} required />
               <Button type='submit'>Submit</Button>
             </form>

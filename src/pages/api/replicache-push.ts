@@ -5,7 +5,7 @@ import { MutationV1 } from 'replicache';
 
 import { serverID, tx } from '@/lib/db';
 
-import { MessageWithID } from '@/types/message';
+import { MessageWithId } from '@/types/message';
 
 export default async function handler(
   req: NextApiRequest,
@@ -117,7 +117,7 @@ async function processMutation(
     // mutation.
     switch (mutation.name) {
       case 'createMessage':
-        await createMessage(t, mutation.args as MessageWithID, nextVersion);
+        await createMessage(t, mutation.args as MessageWithId, nextVersion);
         break;
       default:
         throw new Error(`Unknown mutation: ${mutation.name}`);
@@ -190,7 +190,7 @@ async function setLastMutationID(
 
 async function createMessage(
   t: ITask<object>,
-  { id, from, content, order }: MessageWithID,
+  { id, from, content, order }: MessageWithId,
   version: number
 ) {
   await t.none(

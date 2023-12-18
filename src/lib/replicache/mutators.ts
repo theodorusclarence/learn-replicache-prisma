@@ -1,13 +1,13 @@
 import { WriteTransaction } from 'replicache';
 
-import { MessageWithID } from '@/types/message';
+import { CreateMessageArgs } from '@/types/message';
 
 export const mutators = {
   async createMessage(
     tx: WriteTransaction,
-    { id, from, content, order }: MessageWithID
+    { id, from, content, order }: CreateMessageArgs
   ) {
-    await tx.set(`message/${id}`, {
+    await tx.set(`clarence/message/${id}`, {
       from,
       content,
       order,

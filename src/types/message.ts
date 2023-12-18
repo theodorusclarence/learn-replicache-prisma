@@ -1,7 +1,8 @@
-export type Message = {
-  from: string;
-  content: string;
-  order: number;
-};
+import { Message } from '@prisma/client';
 
-export type MessageWithID = Message & { id: string };
+export type MessageWithoutId = Omit<Message, 'id'>;
+
+export type CreateMessageArgs = Pick<
+  Message,
+  'content' | 'from' | 'order' | 'id'
+>;

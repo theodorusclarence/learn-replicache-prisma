@@ -11,8 +11,31 @@ datasource db {
 }
 
 model ReplicacheClient {
-  // --- PUBLIC ID ---
-  replicacheClientId String @unique
-  // --- FIELDS ---
-  lastMutationId     Int    @default(0)
+  id             String @unique
+  lastMutationId Int    @default(0)
+}
+
+model Realm {
+  version Int @default(0)
+
+  id String @unique
+
+  name String
+
+  messages Message[]
+}
+
+model Message {
+  id String @unique
+
+  from    String
+  content String
+  order   Int
+
+  isDeleted Boolean @default(false)
+
+  version Int @default(0)
+
+  realm   Realm  @relation(fields: [realmId], references: [id])
+  realmId String
 }
