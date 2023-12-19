@@ -1,6 +1,7 @@
 import { TransactionalPrismaClient } from '@/lib/prisma.server';
+import { MutationName } from '@/lib/replicache/mutators';
 
-import { TodoCreateArgs } from '@/types/todo';
+import { TodoCreateArgs, TodoDeleteArgs } from '@/types/todo';
 
 export const backendMutators = {
   todoCreate: async (
@@ -15,4 +16,19 @@ export const backendMutators = {
       },
     });
   },
-};
+  todoDelete: async (
+    tx: TransactionalPrismaClient,
+    args: TodoDeleteArgs,
+    version: number
+  ) => {
+    await tx.todo.update({
+      where: {
+        id: args.id,
+      },
+      data: {
+        isDeleted: true,
+        version,
+      },
+    });
+  },
+} satisfies Record<MutationName, object>;

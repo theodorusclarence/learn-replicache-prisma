@@ -191,8 +191,12 @@ export default async function handler(
     sendPoke();
 
     return res.status(200).json({});
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
+    if (error instanceof Error)
+      return res.status(500).json({ error: error.message });
+
+    return res.status(500).json({ error: error });
   }
 }
 

@@ -1,4 +1,5 @@
 import { UserButton } from '@clerk/nextjs';
+import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import pusherJs from 'pusher-js';
 import * as React from 'react';
@@ -62,6 +63,12 @@ export default function HomePage() {
         .scan<TodoWithoutDate>({ prefix: `${spaceId}/todo/` })
         .entries()
         .toArray();
+      // sort by title using localeCompare
+      list.sort((a, b) =>
+        a[1].title.localeCompare(b[1].title, undefined, {
+          numeric: true,
+        })
+      );
       return list;
     },
     { default: [] }
@@ -100,19 +107,29 @@ export default function HomePage() {
             >
               <input
                 ref={contentRef}
-                value={`todo ${Math.random()}`}
+                value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}
                 required
               />
               <Button type='submit'>Submit</Button>
             </form>
             <div className='mt-8 space-y-2'>
-              {todos.map(([k, v]) => {
-                return <div key={k}>{v.title}</div>;
-              })}
+              {todos.map(([idbKey, todo]) => (
+                <div key={idbKey}>
+                  <span>{todo.title}</span>
+                  <button
+                    className='ml-2'
+                    onClick={() => {
+                      rep?.mutate.todoDelete({
+                        id: todo.id,
+                        spaceId,
+                      });
+                    }}
+                  >
+                    <Trash size={15} />
+                  </button>
+                </div>
+              ))}
             </div>
-            <pre className='overflow-x-auto text-xs'>
-              {JSON.stringify(todos, null, 2)}
-            </pre>
           </div>
         </section>
       </main>
