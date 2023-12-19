@@ -1,52 +1,64 @@
-import { Message } from '@prisma/client';
+import { UserButton } from '@clerk/nextjs';
+import { Todo } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import pusherJs from 'pusher-js';
 import * as React from 'react';
 import { Replicache, TEST_LICENSE_KEY } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
-import { mutators } from '@/lib/replicache/mutators';
+import { M, mutators } from '@/lib/replicache/mutators';
 
 import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-const rep =
-  typeof window !== 'undefined'
-    ? new Replicache({
-        name: 'chat-user-id',
-        licenseKey: TEST_LICENSE_KEY,
-        pushURL: '/api/v2/push?realmId=clarence',
-        pullURL: '/api/v2/pull?realmId=clarence',
-        mutators: mutators,
-      })
-    : null;
-
-function listen() {
-  if (!rep) {
-    return;
-  }
-
-  console.info('listening');
-  // Listen for pokes, and pull whenever we get one.
-  pusherJs.logToConsole = true;
-  const pusher = new pusherJs(process.env.NEXT_PUBLIC_PUSHER_KEY as string, {
-    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
-  });
-  const channel = pusher.subscribe('default');
-  channel.bind('poke', () => {
-    console.info('got poked');
-    rep.pull();
-  });
-}
-listen();
+const realmId = 'clarence';
 
 export default function HomePage() {
+  //#region  //*=========== useReplicache Hooks ===========
+  const [rep, setRep] = React.useState<Replicache<M> | null>(null);
+
+  React.useEffect(() => {
+    (async () => {
+      if (rep) return;
+
+      const r = new Replicache({
+        name: 'chat-user-id',
+        licenseKey: TEST_LICENSE_KEY,
+        pushURL: `/api/v2/push?realmId=${realmId}`,
+        pullURL: `/api/v2/pull?realmId=${realmId}`,
+        mutators: mutators,
+      });
+      setRep(r);
+
+      if (
+        process.env.NEXT_PUBLIC_PUSHER_KEY &&
+        process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+      ) {
+        // Listen for pokes, and pull whenever we get one.
+        pusherJs.logToConsole = true;
+        const pusher = new pusherJs(
+          process.env.NEXT_PUBLIC_PUSHER_KEY as string,
+          {
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
+          }
+        );
+        const channel = pusher.subscribe('default');
+        channel.bind('poke', () => {
+          void r.pull();
+        });
+      }
+
+      return () => void r.close();
+    })();
+  }, [rep]);
+
+  //#endregion  //*======== useReplicache Hooks ===========
   const messages = useSubscribe(
     rep,
     async (tx) => {
       const list = await tx
-        .scan<Message>({ prefix: 'clarence/message/' })
+        .scan<Todo>({ prefix: 'clarence/message/' })
         .entries()
         .toArray();
       list.sort(([, { order: a }], [, { order: b }]) => a - b);
@@ -82,6 +94,10 @@ export default function HomePage() {
 
       <main>
         <section className=''>
+          <header>
+            <UserButton afterSignOutUrl='/' />
+          </header>
+          <div>Your home page's content can go here.</div>
           <div className='layout min-h-screen py-20'>
             Name
             <form

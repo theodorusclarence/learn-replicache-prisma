@@ -14,3 +14,5 @@ export const mutators = {
     });
   },
 };
+
+export type M = typeof mutators;

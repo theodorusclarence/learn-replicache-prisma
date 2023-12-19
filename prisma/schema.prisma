@@ -10,32 +10,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ReplicacheClient {
-  id             String @unique
-  lastMutationId Int    @default(0)
+model Space {
+  id           String   @id @unique @default(cuid())
+  version      Int      @default(0)
+  lastModified DateTime @updatedAt
+  user         User?
+  Todo         Todo?
 }
 
-model Realm {
-  version Int @default(0)
-
-  id String @unique
-
-  name String
-
-  messages Message[]
+model ClientGroup {
+  id         String   @id @unique @default(cuid())
+  lastPullId Int?
+  client     Client[]
 }
 
-model Message {
-  id String @unique
+model Client {
+  id             String      @id @unique @default(cuid())
+  lastMutationId Int         @default(0)
+  version        Int
+  clientGroupId  String
+  clientGroup    ClientGroup @relation(fields: [clientGroupId], references: [id])
+  lastModified   DateTime    @updatedAt
+}
 
-  from    String
-  content String
-  order   Int
+model User {
+  id      String  @unique
+  name    String?
+  email   String?
+  image   String?
+  spaceId String  @unique
+  space   Space   @relation(fields: [spaceId], references: [id])
+}
 
-  isDeleted Boolean @default(false)
-
-  version Int @default(0)
-
-  realm   Realm  @relation(fields: [realmId], references: [id])
-  realmId String
+model Todo {
+  id           String   @id @unique @default(cuid())
+  title        String
+  description  String?
+  completed    Boolean  @default(false)
+  version      Int
+  spaceId      String   @unique
+  space        Space    @relation(fields: [spaceId], references: [id])
+  lastModified DateTime @updatedAt
 }
