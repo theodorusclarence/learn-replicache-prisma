@@ -159,6 +159,17 @@ export default async function handler(
           );
           await Promise.all(promises);
           //#endregion  //*======== Update Client's Last Mutation Ids ===========
+
+          //#region  //*=========== Update Space's Version ===========
+          await tx.space.update({
+            where: {
+              id: spaceId,
+            },
+            data: {
+              version: nextVersion,
+            },
+          });
+          //#endregion  //*======== Update Space's Version ===========
         }
         //#endregion  //*======== Iterate and Process Mutations ===========
 
