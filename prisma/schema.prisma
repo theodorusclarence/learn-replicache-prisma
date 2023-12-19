@@ -15,17 +15,17 @@ model Space {
   version      Int      @default(0)
   lastModified DateTime @updatedAt
   user         User?
-  Todo         Todo?
+  Todo         Todo[]
 }
 
 model ClientGroup {
-  id         String   @id @unique @default(cuid())
-  lastPullId Int?
-  client     Client[]
+  id         String   @id @unique
+  lastPullId Int?     @default(1)
+  clients    Client[]
 }
 
 model Client {
-  id             String      @id @unique @default(cuid())
+  id             String      @id @unique
   lastMutationId Int         @default(0)
   version        Int
   clientGroupId  String
@@ -43,12 +43,13 @@ model User {
 }
 
 model Todo {
-  id           String   @id @unique @default(cuid())
+  id           String   @id @unique
   title        String
   description  String?
   completed    Boolean  @default(false)
   version      Int
-  spaceId      String   @unique
+  spaceId      String
   space        Space    @relation(fields: [spaceId], references: [id])
   lastModified DateTime @updatedAt
+  isDeleted    Boolean  @default(false)
 }

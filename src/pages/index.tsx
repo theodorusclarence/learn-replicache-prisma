@@ -1,5 +1,4 @@
 import { UserButton } from '@clerk/nextjs';
-import { Todo } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import pusherJs from 'pusher-js';
 import * as React from 'react';
@@ -12,7 +11,9 @@ import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-const realmId = 'clarence';
+import { TodoWithoutDate } from '@/types/todo';
+
+const spaceId = 'clqc58guc000ni7aljs6sbyq2';
 
 export default function HomePage() {
   //#region  //*=========== useReplicache Hooks ===========
@@ -25,8 +26,8 @@ export default function HomePage() {
       const r = new Replicache({
         name: 'chat-user-id',
         licenseKey: TEST_LICENSE_KEY,
-        pushURL: `/api/v2/push?realmId=${realmId}`,
-        pullURL: `/api/v2/pull?realmId=${realmId}`,
+        pushURL: `/api/v3/push?spaceId=${spaceId}`,
+        pullURL: `/api/v3/pull?spaceId=${spaceId}`,
         mutators: mutators,
       });
       setRep(r);
@@ -54,35 +55,28 @@ export default function HomePage() {
   }, [rep]);
 
   //#endregion  //*======== useReplicache Hooks ===========
-  const messages = useSubscribe(
+  const todos = useSubscribe(
     rep,
     async (tx) => {
       const list = await tx
-        .scan<Todo>({ prefix: 'clarence/message/' })
+        .scan<TodoWithoutDate>({ prefix: `${spaceId}/todo/` })
         .entries()
         .toArray();
-      list.sort(([, { order: a }], [, { order: b }]) => a - b);
       return list;
     },
     { default: [] }
   );
 
-  const usernameRef = React.useRef<HTMLInputElement>(null);
   const contentRef = React.useRef<HTMLInputElement>(null);
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
-    const last = (messages.length > 0 && messages[messages.length - 1][1]) || {
-      order: 0,
-    };
-    const order = (last?.order ?? 0) + 1;
-
-    rep?.mutate.createMessage({
+    rep?.mutate.todoCreate({
       id: nanoid(),
-      from: usernameRef.current?.value ?? '',
-      content: contentRef.current?.value ?? '',
-      order,
+      spaceId,
+      title: contentRef.current?.value ?? '',
+      description: null,
     });
 
     if (contentRef.current) contentRef.current.value = '';
@@ -104,20 +98,21 @@ export default function HomePage() {
               onSubmit={onSubmit}
               className='flex flex-col items-start space-y-2'
             >
-              <input ref={usernameRef} defaultValue='Clarence' required /> says:{' '}
-              <input ref={contentRef} required />
+              <input
+                ref={contentRef}
+                value={`todo ${Math.random()}`}
+                required
+              />
               <Button type='submit'>Submit</Button>
             </form>
             <div className='mt-8 space-y-2'>
-              {messages.map(([k, v]) => {
-                return (
-                  <div key={k}>
-                    <b>{v.from}: </b>
-                    {v.content}
-                  </div>
-                );
+              {todos.map(([k, v]) => {
+                return <div key={k}>{v.title}</div>;
               })}
             </div>
+            <pre className='overflow-x-auto text-xs'>
+              {JSON.stringify(todos, null, 2)}
+            </pre>
           </div>
         </section>
       </main>
