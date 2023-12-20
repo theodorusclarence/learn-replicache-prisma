@@ -11,9 +11,9 @@ export const backendMutators = {
     version: number
   ) => {
     const issue = await octokit.rest.issues.create({
-      owner: 'rtpa25',
-      repo: 'dimension-dump',
-      title: args.title,
+      owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
+      repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
+      title: `${args.id}/${args.title}`,
       body: `${args.description ?? ''}
       Created from learn-replicache-prisma app
       `,
@@ -27,7 +27,7 @@ export const backendMutators = {
           create: {
             number: issue.data.number,
             owner: issue.data.user?.login ?? '',
-            repo: issue.data.repository?.name ?? '',
+            repo: issue.data.repository_url.split('/').pop() ?? '',
             id: issue.data.node_id,
           },
         },
