@@ -29,7 +29,7 @@ model Client {
   lastMutationId Int         @default(0)
   version        Int
   clientGroupId  String
-  clientGroup    ClientGroup @relation(fields: [clientGroupId], references: [id])
+  clientGroup    ClientGroup @relation(fields: [clientGroupId], references: [id], onDelete: Cascade)
   lastModified   DateTime    @updatedAt
 }
 
@@ -39,7 +39,7 @@ model User {
   email   String?
   image   String?
   spaceId String  @unique
-  space   Space   @relation(fields: [spaceId], references: [id])
+  space   Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 }
 
 model Todo {
@@ -49,7 +49,7 @@ model Todo {
   completed    Boolean  @default(false)
   version      Int
   spaceId      String
-  space        Space    @relation(fields: [spaceId], references: [id])
+  space        Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   lastModified DateTime @updatedAt
   isDeleted    Boolean  @default(false)
 }
