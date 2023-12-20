@@ -200,7 +200,7 @@ export default async function handler(
   }
 }
 
-async function sendPoke() {
+export async function sendPoke() {
   const pusher = new Pusher({
     appId: process.env.NEXT_PUBLIC_PUSHER_APP_ID as string,
     key: process.env.NEXT_PUBLIC_PUSHER_KEY as string,
