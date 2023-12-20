@@ -14,7 +14,7 @@ import Seo from '@/components/Seo';
 
 import { TodoWithoutDate } from '@/types/todo';
 
-const spaceId = 'clqc58guc000ni7aljs6sbyq2';
+const spaceId = 'clqdmrigg00017qz1dip3jn51';
 
 export default function HomePage() {
   //#region  //*=========== useReplicache Hooks ===========

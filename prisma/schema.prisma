@@ -34,22 +34,35 @@ model Client {
 }
 
 model User {
-  id      String  @unique
+  id      String  @id @unique
   name    String?
-  email   String?
+  email   String  @unique
   image   String?
   spaceId String  @unique
   space   Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 }
 
 model Todo {
-  id           String   @id @unique
+  id           String       @id @unique
   title        String
   description  String?
-  completed    Boolean  @default(false)
+  completed    Boolean      @default(false)
   version      Int
   spaceId      String
-  space        Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  lastModified DateTime @updatedAt
-  isDeleted    Boolean  @default(false)
+  space        Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  lastModified DateTime     @updatedAt
+  isDeleted    Boolean      @default(false)
+  GithubIssue  GithubIssue?
+}
+
+model GithubIssue {
+  id     String @id @unique
+  todoId String @unique
+  todo   Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  number Int
+  owner  String
+  repo   String
+
+  @@unique([owner, repo, number])
+  @@index([owner, repo, number], name: "owner_repo_number")
 }
