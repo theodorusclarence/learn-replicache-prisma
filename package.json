@@ -17,6 +17,9 @@
     "postbuild": "next-sitemap --config next-sitemap.config.js",
     "prepare": "husky install"
   },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
   "dependencies": {
     "@clerk/nextjs": "^4.28.1",
     "@prisma/client": "5.6.0",

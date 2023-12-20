@@ -1,4 +1,3 @@
-import { ClerkProvider } from '@clerk/nextjs';
 import { AppProps } from 'next/app';
 
 import '@/styles/globals.css';
@@ -11,11 +10,7 @@ import '@/styles/colors.css';
  */
 
 function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <ClerkProvider {...pageProps}>
-      <Component {...pageProps} />;
-    </ClerkProvider>
-  );
+  return <Component {...pageProps} />;
 }
 
 export default MyApp;

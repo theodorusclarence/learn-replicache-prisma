@@ -1,9 +1,8 @@
-import { UserButton } from '@clerk/nextjs';
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import pusherJs from 'pusher-js';
 import * as React from 'react';
-import { Replicache, TEST_LICENSE_KEY } from 'replicache';
+import { Replicache } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
 import { M, mutators } from '@/lib/replicache/mutators';
@@ -14,7 +13,7 @@ import Seo from '@/components/Seo';
 
 import { TodoWithoutDate } from '@/types/todo';
 
-const spaceId = 'clqdmrigg00017qz1dip3jn51';
+const spaceId = 'dummy-space-id';
 
 export default function HomePage() {
   //#region  //*=========== useReplicache Hooks ===========
@@ -26,7 +25,7 @@ export default function HomePage() {
 
       const r = new Replicache({
         name: 'chat-user-id',
-        licenseKey: TEST_LICENSE_KEY,
+        licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
         pushURL: `/api/v3/push?spaceId=${spaceId}`,
         pullURL: `/api/v3/pull?spaceId=${spaceId}`,
         mutators: mutators,
@@ -95,10 +94,6 @@ export default function HomePage() {
 
       <main>
         <section className=''>
-          <header>
-            <UserButton afterSignOutUrl='/' />
-          </header>
-          <div>Your home page's content can go here.</div>
           <div className='layout min-h-screen py-20'>
             Name
             <form
