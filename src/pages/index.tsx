@@ -114,10 +114,8 @@ export default function HomePage() {
             </form>
             <div className='mt-8 space-y-2'>
               {todos.map(([idbKey, todo]) => (
-                <div key={idbKey}>
-                  <span>{todo.title}</span>
+                <div key={idbKey} className='space-x-4'>
                   <button
-                    className='ml-2'
                     onClick={() => {
                       rep?.mutate.todoDelete({
                         id: todo.id,
@@ -127,6 +125,8 @@ export default function HomePage() {
                   >
                     <Trash size={15} />
                   </button>
+                  <span>{todo.title}</span>
+                  <span>{idbKey}</span>
                 </div>
               ))}
             </div>
