@@ -7,12 +7,7 @@ import { prismaClient } from '@/lib/prisma.server';
 const pullRequestSchema = z.object({
   profileID: z.string(),
   clientGroupID: z.string(),
-  cookie: z
-    .object({
-      version: z.number(),
-      order: z.number(),
-    })
-    .nullable(),
+  cookie: z.number().nullable(),
   schemaVersion: z.string(),
 });
 type Cookie = z.infer<typeof pullRequestSchema>['cookie'];
@@ -47,16 +42,12 @@ export default async function handler(
         }
         //#endregion  //*======== Get Space's Version ===========
 
-        //#region  //*=========== Increment Client Group's Pull ID ===========
-        const _nextPullId = await tx.clientGroup.upsert({
+        //#region  //*=========== Create Client Group if not existent ===========
+        await tx.clientGroup.upsert({
           where: {
             id: pull.clientGroupID,
           },
-          update: {
-            lastPullId: {
-              increment: 1,
-            },
-          },
+          update: {},
           create: {
             id: pull.clientGroupID,
           },
@@ -64,8 +55,7 @@ export default async function handler(
             lastPullId: true,
           },
         });
-        const nextPullId = _nextPullId?.lastPullId ?? 1;
-        //#endregion  //*======== Increment Client Group's Pull ID ===========
+        //#endregion  //*======== Create Client Group if not existent ===========
 
         if (!cookie) {
           //#region  //*=========== Get Client's Last Mutation Ids Since 0 ===========
@@ -93,10 +83,7 @@ export default async function handler(
             },
           });
 
-          const responseCookie: Cookie = {
-            version,
-            order: nextPullId,
-          };
+          const responseCookie: Cookie = version;
 
           return { todos, lastMutationIds, responseCookie };
         } else {
@@ -104,7 +91,7 @@ export default async function handler(
           const clients = await tx.client.findMany({
             where: {
               clientGroupId: pull.clientGroupID,
-              version: { gt: cookie.version },
+              version: { gt: cookie },
             },
           });
           /**
@@ -122,14 +109,11 @@ export default async function handler(
           const todos = await tx.todo.findMany({
             where: {
               spaceId,
-              version: { gt: cookie.version },
+              version: { gt: cookie },
             },
           });
 
-          const responseCookie: Cookie = {
-            version,
-            order: nextPullId,
-          };
+          const responseCookie: Cookie = version;
 
           return { todos, lastMutationIds, responseCookie };
         }
