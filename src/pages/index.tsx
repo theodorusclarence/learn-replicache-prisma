@@ -20,39 +20,40 @@ export default function HomePage() {
   const [rep, setRep] = React.useState<Replicache<M> | null>(null);
 
   React.useEffect(() => {
-    (async () => {
-      if (rep) return;
+    const iid = nanoid();
 
-      const r = new Replicache({
-        name: 'chat-user-id',
-        licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
-        pushURL: `/api/v3/push?spaceId=${spaceId}`,
-        pullURL: `/api/v3/pull?spaceId=${spaceId}`,
-        mutators: mutators,
+    const r = new Replicache({
+      name: 'chat-user-id',
+      licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
+      pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
+      pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
+      mutators: mutators,
+    });
+    setRep(r);
+
+    if (
+      process.env.NEXT_PUBLIC_PUSHER_KEY &&
+      process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+    ) {
+      // Listen for pokes, and pull whenever we get one.
+      pusherJs.logToConsole = true;
+      const pusher = new pusherJs(
+        process.env.NEXT_PUBLIC_PUSHER_KEY as string,
+        {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
+        }
+      );
+      const channel = pusher.subscribe('default');
+      channel.bind('poke', () => {
+        void r.pull();
       });
-      setRep(r);
+    }
 
-      if (
-        process.env.NEXT_PUBLIC_PUSHER_KEY &&
-        process.env.NEXT_PUBLIC_PUSHER_CLUSTER
-      ) {
-        // Listen for pokes, and pull whenever we get one.
-        pusherJs.logToConsole = true;
-        const pusher = new pusherJs(
-          process.env.NEXT_PUBLIC_PUSHER_KEY as string,
-          {
-            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
-          }
-        );
-        const channel = pusher.subscribe('default');
-        channel.bind('poke', () => {
-          void r.pull();
-        });
-      }
-
-      return () => void r.close();
-    })();
-  }, [rep]);
+    return () => {
+      void r.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   //#endregion  //*======== useReplicache Hooks ===========
   const todos = useSubscribe(

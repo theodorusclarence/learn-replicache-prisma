@@ -57,66 +57,35 @@ export default async function handler(
         });
         //#endregion  //*======== Create Client Group if not existent ===========
 
-        if (!cookie) {
-          //#region  //*=========== Get Client's Last Mutation Ids Since 0 ===========
-          const clients = await tx.client.findMany({
-            where: {
-              clientGroupId: pull.clientGroupID,
-              version: { gt: 0 },
-            },
-          });
-          /**
-           * @example
-           * {
-           *   "1234132412343": 1,
-           *   "1234132412344": 2,
-           *  }
-           */
-          const lastMutationIds = Object.fromEntries(
-            clients.map((client) => [client.id, client.lastMutationId])
-          );
-          //#endregion  //*======== Get Client's Last Mutation Ids Since 0 ===========
+        //#region  //*=========== Get Client's Last Mutation Ids Since Version ===========
+        const clients = await tx.client.findMany({
+          where: {
+            clientGroupId: pull.clientGroupID,
+            version: { gt: cookie ?? 0 },
+          },
+        });
+        /**
+         * @example
+         * {
+         *   "1234132412343": 1,
+         *   "1234132412344": 2,
+         *  }
+         */
+        const lastMutationIds = Object.fromEntries(
+          clients.map((client) => [client.id, client.lastMutationId])
+        );
+        //#endregion  //*======== Get Client's Last Mutation Ids Since Version ===========
 
-          const todos = await tx.todo.findMany({
-            where: {
-              spaceId,
-            },
-          });
+        const todos = await tx.todo.findMany({
+          where: {
+            spaceId,
+            version: { gt: cookie ?? 0 },
+          },
+        });
 
-          const responseCookie: Cookie = version;
+        const responseCookie: Cookie = version;
 
-          return { todos, lastMutationIds, responseCookie };
-        } else {
-          //#region  //*=========== Get Client's Last Mutation Ids Since Version ===========
-          const clients = await tx.client.findMany({
-            where: {
-              clientGroupId: pull.clientGroupID,
-              version: { gt: cookie },
-            },
-          });
-          /**
-           * @example
-           * {
-           *   "1234132412343": 1,
-           *   "1234132412344": 2,
-           *  }
-           */
-          const lastMutationIds = Object.fromEntries(
-            clients.map((client) => [client.id, client.lastMutationId])
-          );
-          //#endregion  //*======== Get Client's Last Mutation Ids Since Version ===========
-
-          const todos = await tx.todo.findMany({
-            where: {
-              spaceId,
-              version: { gt: cookie },
-            },
-          });
-
-          const responseCookie: Cookie = version;
-
-          return { todos, lastMutationIds, responseCookie };
-        }
+        return { todos, lastMutationIds, responseCookie };
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // Required for Replicache to work
