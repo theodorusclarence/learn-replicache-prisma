@@ -5,13 +5,13 @@ import * as React from 'react';
 import { Replicache } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
-import { mutators } from '@/lib/client/mutators/todo.mutator';
+import { clientMutators } from '@/lib/client/mutators/index.mutator';
 
 import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-import { M } from '@/models/mutator.model';
+import { M } from '@/models/mutator/index.model';
 import { TodoWithoutDate } from '@/models/todo.model';
 
 const spaceId = 'dummy-space-id';
@@ -28,7 +28,7 @@ export default function HomePage() {
       licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
       pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
       pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
-      mutators,
+      mutators: clientMutators,
     });
     setRep(r);
 

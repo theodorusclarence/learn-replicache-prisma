@@ -1,13 +1,10 @@
-import { WriteTransaction } from 'replicache';
+import { TodoMutators } from '@/models/mutator/todo.model';
 
-import { M } from '@/models/mutator.model';
-import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
-
-export const mutators: M<'client'> = {
-  async todoCreate(tx: WriteTransaction, args: TodoCreateArgs) {
+export const clientTodoMutators: TodoMutators<'client'> = {
+  async todoCreate(tx, args) {
     await tx.set(`${args.spaceId}/todo/${args.id}`, args);
   },
-  async todoDelete(tx: WriteTransaction, args: TodoDeleteArgs) {
+  async todoDelete(tx, args) {
     await tx.del(`${args.spaceId}/todo/${args.id}`);
   },
 };

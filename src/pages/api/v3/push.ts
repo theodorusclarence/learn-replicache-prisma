@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
 import { z } from 'zod';
 
-import { serverMutators } from '@/lib/server/mutators/todo.mutator';
+import { serverMutators } from '@/lib/server/mutators/index.mutator';
 import {
   ClientGroupService,
   ClientService,
