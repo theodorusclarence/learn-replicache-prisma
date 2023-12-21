@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
 import { z } from 'zod';
 
-import { ServerTodoMutators } from '@/lib/server/mutators/todo.mutator';
+import { serverMutators } from '@/lib/server/mutators/todo.mutator';
 import {
   ClientGroupService,
   ClientService,
@@ -42,7 +42,6 @@ export default async function handler(
         const clientService = new ClientService(tx);
         const spaceService = new SpaceService(tx);
         const clientGroupService = new ClientGroupService(tx);
-        const backendMutators = new ServerTodoMutators(tx);
         //#endregion  //*======== Get Services ===========
 
         //#region  //*=========== Get Space's Version ===========
@@ -117,13 +116,13 @@ export default async function handler(
 
           //* Process Mutations
           const mutator =
-            backendMutators[mutation.name as keyof typeof backendMutators];
+            serverMutators[mutation.name as keyof typeof serverMutators];
           if (!mutator) {
             throw new Error(`Unknown mutation: ${mutation.name}`);
           }
 
           try {
-            await mutator(undefined, mutation.args, nextVersion);
+            await mutator(tx, mutation.args, nextVersion);
           } catch (error) {
             console.error(error);
             throw new Error(`Error processing mutation: ${mutation.name}`);

@@ -1,30 +1,18 @@
 import { TodoService } from '@/lib/server/services';
 
-import { Mutators } from '@/models/mutator.model';
-import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
-import { TransactionalPrismaClient } from '@/utils/server/prisma';
+import { M } from '@/models/mutator.model';
 
 const GITHUB_SYNC_ENABLED = process.env.NEXT_PUBLIC_SYNC_WITH_GITHUB === 'true';
 
-export class ServerTodoMutators extends Mutators {
-  private todoService: TodoService;
-  constructor(private tx: TransactionalPrismaClient) {
-    super();
-    this.todoService = new TodoService(this.tx);
-  }
+export const serverMutators: M<'server'> = {
+  async todoCreate(tx, args, version) {
+    const todoService = new TodoService(tx);
 
-  public async todoCreate(
-    _tx = undefined,
-    args: TodoCreateArgs,
-    version: number
-  ): Promise<void> {
-    await this.todoService.create(args, version, GITHUB_SYNC_ENABLED);
-  }
-  public async todoDelete(
-    _tx = undefined,
-    args: TodoDeleteArgs,
-    version: number
-  ): Promise<void> {
-    await this.todoService.delete(args, version, GITHUB_SYNC_ENABLED);
-  }
-}
+    await todoService.create(args, version, GITHUB_SYNC_ENABLED);
+  },
+  async todoDelete(tx, args, version) {
+    const todoService = new TodoService(tx);
+
+    await todoService.delete(args, version, GITHUB_SYNC_ENABLED);
+  },
+};

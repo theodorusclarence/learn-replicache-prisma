@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Replicache } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
-import { mutators } from '@/lib/client/mutators/todo.mutators';
+import { mutators } from '@/lib/client/mutators/todo.mutator';
 
 import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
@@ -18,7 +18,7 @@ const spaceId = 'dummy-space-id';
 
 export default function HomePage() {
   //#region  //*=========== useReplicache Hooks ===========
-  const [rep, setRep] = React.useState<Replicache<M> | null>(null);
+  const [rep, setRep] = React.useState<Replicache<M<'client'>> | null>(null);
 
   React.useEffect(() => {
     const iid = nanoid();
