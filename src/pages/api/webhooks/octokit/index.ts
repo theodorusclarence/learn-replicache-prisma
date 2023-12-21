@@ -2,9 +2,8 @@ import { EmitterWebhookEvent } from '@octokit/webhooks';
 import { nanoid } from 'nanoid';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import { prismaClient } from '@/lib/prisma.server';
-
 import { sendPoke } from '@/pages/api/v3/push';
+import { prismaClient } from '@/utils/server/prisma';
 
 export default async function handler(
   req: NextApiRequest,

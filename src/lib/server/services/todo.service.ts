@@ -1,27 +1,29 @@
-import { octokit } from '@/lib/octokit.server';
-import { TransactionalPrismaClient } from '@/lib/prisma.server';
-import { MutationName } from '@/lib/replicache/mutators';
+import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
+import { octokit } from '@/utils/server/octokit';
+import { TransactionalPrismaClient } from '@/utils/server/prisma';
 
-import { TodoCreateArgs, TodoDeleteArgs } from '@/types/todo';
+export class TodoService {
+  constructor(private tx: TransactionalPrismaClient) {}
 
-const GITHUB_SYNC_ENABLED = process.env.NEXT_PUBLIC_SYNC_WITH_GITHUB === 'true';
-
-export const backendMutators = {
-  todoCreate: async (
-    tx: TransactionalPrismaClient,
+  /**
+   *
+   * Create's a new todo and create's a new issue on Github
+   * associated with the todo.
+   *
+   */
+  async create(
     args: TodoCreateArgs,
-    version: number
-  ) => {
-    if (!GITHUB_SYNC_ENABLED) {
-      await tx.todo.create({
+    version: number,
+    githubSyncEnabled?: boolean
+  ) {
+    if (!githubSyncEnabled) {
+      return this.tx.todo.create({
         data: {
           ...args,
           version,
         },
       });
-      return;
     }
-
     const issue = await octokit.rest.issues.create({
       owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
       repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
@@ -31,7 +33,7 @@ export const backendMutators = {
       `,
     });
 
-    await tx.todo.create({
+    return this.tx.todo.create({
       data: {
         ...args,
         version,
@@ -45,14 +47,25 @@ export const backendMutators = {
         },
       },
     });
-  },
-  todoDelete: async (
-    tx: TransactionalPrismaClient,
+  }
+
+  async update() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   *
+   * Delete's a todo in our db and close's the
+   * associated issue on Github.
+   *
+   */
+  async delete(
     args: TodoDeleteArgs,
-    version: number
-  ) => {
-    if (!GITHUB_SYNC_ENABLED) {
-      await tx.todo.update({
+    version: number,
+    githubSyncEnabled?: boolean
+  ) {
+    if (!githubSyncEnabled) {
+      return this.tx.todo.update({
         where: {
           id: args.id,
         },
@@ -61,10 +74,9 @@ export const backendMutators = {
           version,
         },
       });
-      return;
     }
 
-    const updatedTodo = await tx.todo.update({
+    const updatedTodo = await this.tx.todo.update({
       where: {
         id: args.id,
       },
@@ -83,5 +95,25 @@ export const backendMutators = {
       issue_number: updatedTodo.GithubIssue?.number ?? 0,
       state: 'closed',
     });
-  },
-} satisfies Record<MutationName, object>;
+
+    return true;
+  }
+
+  async findById() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   *
+   * Find's all todo's in a space.
+   *
+   */
+  async findManyBySpace(spaceId: string, gtVersion?: number) {
+    return this.tx.todo.findMany({
+      where: {
+        spaceId,
+        version: { gt: gtVersion ?? 0 },
+      },
+    });
+  }
+}
