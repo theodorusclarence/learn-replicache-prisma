@@ -1,4 +1,4 @@
-import { TodoService } from '@/lib/server/services';
+import { TodoService } from '@/lib/server/services/todo.service';
 
 import { TodoMutators } from '@/models/mutator/todo.model';
 
