@@ -1,62 +1,21 @@
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import pusherJs from 'pusher-js';
 import * as React from 'react';
-import { Replicache } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
-import { clientMutators } from '@/lib/client/mutators/index.mutator';
+import { useReplicache } from '@/hooks/useReplicache';
+import { useSpace } from '@/hooks/useSpace';
 
 import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-import { M } from '@/models/mutator/index.model';
 import { TodoWithoutDate } from '@/models/todo.model';
 
-const spaceId = 'dummy-space-id';
-
 export default function HomePage() {
-  //#region  //*=========== useReplicache Hooks ===========
-  const [rep, setRep] = React.useState<Replicache<M<'client'>> | null>(null);
+  const rep = useReplicache();
+  const spaceId = useSpace();
 
-  React.useEffect(() => {
-    const iid = nanoid();
-
-    const r = new Replicache({
-      name: 'chat-user-id',
-      licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
-      pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
-      pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
-      mutators: clientMutators,
-    });
-    setRep(r);
-
-    if (
-      process.env.NEXT_PUBLIC_PUSHER_KEY &&
-      process.env.NEXT_PUBLIC_PUSHER_CLUSTER
-    ) {
-      // Listen for pokes, and pull whenever we get one.
-      pusherJs.logToConsole = true;
-      const pusher = new pusherJs(
-        process.env.NEXT_PUBLIC_PUSHER_KEY as string,
-        {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
-        }
-      );
-      const channel = pusher.subscribe('default');
-      channel.bind('poke', () => {
-        void r.pull();
-      });
-    }
-
-    return () => {
-      void r.close();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  //#endregion  //*======== useReplicache Hooks ===========
   const todos = useSubscribe(
     rep,
     async (tx) => {
@@ -97,12 +56,17 @@ export default function HomePage() {
       <main>
         <section className=''>
           <div className='layout min-h-screen py-20'>
-            Name
+            <pre className='overflow-x-auto text-xs'>
+              {JSON.stringify(spaceId, null, 2)}
+            </pre>
+
             <form
               onSubmit={onSubmit}
-              className='flex flex-col items-start space-y-2'
+              className='mt-8 flex flex-col items-start space-y-2'
             >
+              <label htmlFor='content'>Title</label>
               <input
+                name='content'
                 ref={contentRef}
                 value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}
                 required
