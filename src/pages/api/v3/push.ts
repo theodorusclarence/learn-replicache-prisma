@@ -153,6 +153,7 @@ export default async function handler(
                 },
                 data: {
                   lastMutationId,
+                  version: nextVersion,
                 },
               });
             }
