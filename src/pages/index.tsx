@@ -1,3 +1,4 @@
+import { Todo } from '@prisma/client';
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import * as React from 'react';
@@ -10,7 +11,7 @@ import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-import { TodoWithoutDate } from '@/models/todo.model';
+import { ConvertDate } from '@/utils/type-helpers';
 
 export default function HomePage() {
   const rep = useReplicache();
@@ -20,7 +21,7 @@ export default function HomePage() {
     rep,
     async (tx) => {
       const list = await tx
-        .scan<TodoWithoutDate>({ prefix: `${spaceId}/todo/` })
+        .scan<ConvertDate<Todo>>({ prefix: `${spaceId}/todo/` })
         .entries()
         .toArray();
       // sort by title using localeCompare
