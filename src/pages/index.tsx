@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useSubscribe } from 'replicache-react';
 
 import { useReplicache } from '@/hooks/useReplicache';
-import { useSpace } from '@/hooks/useSpace';
+import { useSpace, useSpaceStore } from '@/hooks/useSpace';
 
 import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
@@ -49,6 +49,8 @@ export default function HomePage() {
     if (contentRef.current) contentRef.current.value = '';
   };
 
+  const setSpace = useSpaceStore((state) => state.setSpaceId);
+
   return (
     <Layout>
       <Seo templateTitle='Home' />
@@ -59,6 +61,17 @@ export default function HomePage() {
             <pre className='overflow-x-auto text-xs'>
               {JSON.stringify(spaceId, null, 2)}
             </pre>
+            <Button
+              onClick={() => {
+                if (spaceId === 'dummy-space-id') {
+                  setSpace('dummy-space-id-2');
+                } else {
+                  setSpace('dummy-space-id');
+                }
+              }}
+            >
+              Change Space
+            </Button>
 
             <form
               onSubmit={onSubmit}

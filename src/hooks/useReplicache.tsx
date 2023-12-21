@@ -37,7 +37,7 @@ export const useLoadReplicache = () => {
     const iid = nanoid();
 
     const r = new Replicache({
-      name: 'chat-user-id',
+      name: spaceId,
       licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
       pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
       pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
