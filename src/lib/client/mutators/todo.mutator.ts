@@ -1,10 +1,12 @@
 import { TodoMutators } from '@/models/mutator/todo.model';
 
-export const clientTodoMutators: TodoMutators<'client'> = {
+export const clientTodoMutators: (spaceId: string) => TodoMutators<'client'> = (
+  spaceId
+) => ({
   async todoCreate(tx, args) {
-    await tx.set(`${args.spaceId}/todo/${args.id}`, args);
+    await tx.set(`${spaceId}/todo/${args.id}`, args);
   },
   async todoDelete(tx, args) {
-    await tx.del(`${args.spaceId}/todo/${args.id}`);
+    await tx.del(`${spaceId}/todo/${args.id}`);
   },
-};
+});

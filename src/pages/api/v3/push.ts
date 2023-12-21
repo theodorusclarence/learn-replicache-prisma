@@ -122,7 +122,7 @@ export default async function handler(
           }
 
           try {
-            await mutator(tx, mutation.args, nextVersion);
+            await mutator(tx, mutation.args, nextVersion, spaceId);
           } catch (error) {
             console.error(error);
             throw new Error(`Error processing mutation: ${mutation.name}`);

@@ -3,7 +3,7 @@ import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 type State = {
-  spaceId: string;
+  spaceId: string | null;
 };
 
 type Actions = {
