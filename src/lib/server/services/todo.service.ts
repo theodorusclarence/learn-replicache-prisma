@@ -11,7 +11,19 @@ export class TodoService {
    * associated with the todo.
    *
    */
-  async create(args: TodoCreateArgs, version: number) {
+  async create(
+    args: TodoCreateArgs,
+    version: number,
+    githubSyncEnabled?: boolean
+  ) {
+    if (!githubSyncEnabled) {
+      return this.tx.todo.create({
+        data: {
+          ...args,
+          version,
+        },
+      });
+    }
     const issue = await octokit.rest.issues.create({
       owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
       repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
@@ -47,7 +59,23 @@ export class TodoService {
    * associated issue on Github.
    *
    */
-  async delete(args: TodoDeleteArgs, version: number) {
+  async delete(
+    args: TodoDeleteArgs,
+    version: number,
+    githubSyncEnabled?: boolean
+  ) {
+    if (!githubSyncEnabled) {
+      return this.tx.todo.update({
+        where: {
+          id: args.id,
+        },
+        data: {
+          isDeleted: true,
+          version,
+        },
+      });
+    }
+
     const updatedTodo = await this.tx.todo.update({
       where: {
         id: args.id,
