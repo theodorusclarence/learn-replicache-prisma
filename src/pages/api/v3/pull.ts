@@ -2,7 +2,14 @@ import { Prisma } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
-import { prismaClient } from '@/lib/prisma.server';
+import {
+  ClientGroupService,
+  ClientService,
+  SpaceService,
+  TodoService,
+} from '@/lib/server/services';
+
+import { prismaClient } from '@/utils/server/prisma';
 
 const pullRequestSchema = z.object({
   profileID: z.string(),
@@ -26,16 +33,16 @@ export default async function handler(
     //#region  //*=========== Prisma Transaction ===========
     const trxResponse = await prismaClient?.$transaction(
       async (tx) => {
+        //#region  //*=========== Get Services ===========
+        const clientService = new ClientService(tx);
+        const spaceService = new SpaceService(tx);
+        const clientGroupService = new ClientGroupService(tx);
+        const todoService = new TodoService(tx);
+        //#endregion  //*======== Get Services ===========
+
         //#region  //*=========== Get Space's Version ===========
-        const _version = await tx.space.findUnique({
-          where: {
-            id: spaceId,
-          },
-          select: {
-            version: true,
-          },
-        });
-        const version = _version?.version;
+        const space = await spaceService.getById(spaceId);
+        const version = space?.version;
 
         if (version === undefined) {
           return undefined;
@@ -43,27 +50,14 @@ export default async function handler(
         //#endregion  //*======== Get Space's Version ===========
 
         //#region  //*=========== Create Client Group if not existent ===========
-        await tx.clientGroup.upsert({
-          where: {
-            id: pull.clientGroupID,
-          },
-          update: {},
-          create: {
-            id: pull.clientGroupID,
-          },
-          select: {
-            lastPullId: true,
-          },
-        });
+        await clientGroupService.createIfNotExists(pull.clientGroupID);
         //#endregion  //*======== Create Client Group if not existent ===========
 
         //#region  //*=========== Get Client's Last Mutation Ids Since Version ===========
-        const clients = await tx.client.findMany({
-          where: {
-            clientGroupId: pull.clientGroupID,
-            version: { gt: cookie ?? 0 },
-          },
-        });
+        const clients = await clientService.findManyInClientGroup(
+          pull.clientGroupID,
+          cookie ?? 0
+        );
         /**
          * @example
          * {
@@ -76,12 +70,7 @@ export default async function handler(
         );
         //#endregion  //*======== Get Client's Last Mutation Ids Since Version ===========
 
-        const todos = await tx.todo.findMany({
-          where: {
-            spaceId,
-            version: { gt: cookie ?? 0 },
-          },
-        });
+        const todos = await todoService.findManyBySpace(spaceId, cookie ?? 0);
 
         const responseCookie: Cookie = version;
 

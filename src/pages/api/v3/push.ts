@@ -3,8 +3,14 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
 import { z } from 'zod';
 
-import { prismaClient } from '@/lib/prisma.server';
-import { backendMutators } from '@/lib/replicache/backend-mutators.server';
+import { ServerTodoMutators } from '@/lib/server/mutators/todo.mutator';
+import {
+  ClientGroupService,
+  ClientService,
+  SpaceService,
+} from '@/lib/server/services';
+
+import { prismaClient } from '@/utils/server/prisma';
 
 const pushRequestSchema = z.object({
   profileID: z.string(),
@@ -32,16 +38,16 @@ export default async function handler(
   try {
     const trxResponse = await prismaClient?.$transaction(
       async (tx) => {
+        //#region  //*=========== Get Services ===========
+        const clientService = new ClientService(tx);
+        const spaceService = new SpaceService(tx);
+        const clientGroupService = new ClientGroupService(tx);
+        const backendMutators = new ServerTodoMutators(tx);
+        //#endregion  //*======== Get Services ===========
+
         //#region  //*=========== Get Space's Version ===========
-        const _version = await tx.space.findUnique({
-          where: {
-            id: spaceId,
-          },
-          select: {
-            version: true,
-          },
-        });
-        const version = _version?.version;
+        const space = await spaceService.getById(spaceId);
+        const version = space?.version;
 
         if (version === undefined) {
           return undefined;
@@ -54,30 +60,21 @@ export default async function handler(
         const clientIds = Array.from(
           new Set(push.mutations.map((m) => m.clientID))
         );
-        const clients = await tx.client.findMany({
-          where: {
-            id: {
-              in: clientIds,
-            },
-          },
-          select: {
-            id: true,
-            lastMutationId: true,
-          },
-        });
+
+        const clients = await clientService.findManyByIds(clientIds);
 
         // Create clients that don't exist yet
         const clientsNotFound = clientIds.filter(
           (id) => !clients.some((c) => c.id === id)
         );
         if (clientsNotFound.length > 0) {
-          await tx.client.createMany({
-            data: clientsNotFound.map((id) => ({
+          await clientService.createMany(
+            clientsNotFound.map((id) => ({
               id,
               version: nextVersion,
               clientGroupId: push.clientGroupID,
-            })),
-          });
+            }))
+          );
         }
 
         /**
@@ -126,7 +123,7 @@ export default async function handler(
           }
 
           try {
-            await mutator(tx, mutation.args, nextVersion);
+            await mutator(undefined, mutation.args, nextVersion);
           } catch (error) {
             console.error(error);
             throw new Error(`Error processing mutation: ${mutation.name}`);
@@ -135,26 +132,14 @@ export default async function handler(
           //#region  //*=========== Update Client's Last Mutation Ids ===========
           lastMutationIds[mutation.clientID] = expectedMutationId;
           // Create ClientGroup if it doesn't exist yet
-          await tx.clientGroup.upsert({
-            where: {
-              id: push.clientGroupID,
-            },
-            update: {},
-            create: {
-              id: push.clientGroupID,
-            },
-          });
+          await clientGroupService.createIfNotExists(push.clientGroupID);
           // Update Client's lastMutationId
           const promises = Object.entries(lastMutationIds).map(
             ([id, lastMutationId]) => {
-              return tx.client.update({
-                where: {
-                  id,
-                },
-                data: {
-                  lastMutationId,
-                  version: nextVersion,
-                },
+              return clientService.update({
+                id,
+                lastMutationId,
+                version: nextVersion,
               });
             }
           );
@@ -162,14 +147,7 @@ export default async function handler(
           //#endregion  //*======== Update Client's Last Mutation Ids ===========
 
           //#region  //*=========== Update Space's Version ===========
-          await tx.space.update({
-            where: {
-              id: spaceId,
-            },
-            data: {
-              version: nextVersion,
-            },
-          });
+          await spaceService.updateVersion(spaceId, nextVersion);
           //#endregion  //*======== Update Space's Version ===========
         }
         //#endregion  //*======== Iterate and Process Mutations ===========

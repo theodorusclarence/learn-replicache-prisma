@@ -1,3 +1,6 @@
+import clsx, { ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
 type OpenGraphType = {
   siteName: string;
   description: string;
@@ -38,4 +41,9 @@ export function getFromSessionStorage(key: string): string | null {
     return sessionStorage.getItem(key);
   }
   return null;
+}
+
+/** Merge classes with tailwind-merge with clsx full feature */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }

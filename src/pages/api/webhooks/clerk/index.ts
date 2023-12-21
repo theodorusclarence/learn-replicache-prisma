@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Webhook } from 'svix';
 
-import { prismaClient } from '@/lib/prisma.server';
+import { prismaClient } from '@/utils/server/prisma';
 
 export const config = {
   api: {

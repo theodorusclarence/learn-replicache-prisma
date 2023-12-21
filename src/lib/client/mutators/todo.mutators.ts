@@ -1,8 +1,9 @@
 import { WriteTransaction } from 'replicache';
 
-import { TodoCreateArgs, TodoDeleteArgs } from '@/types/todo';
+import { M } from '@/models/mutator.model';
+import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
 
-export const mutators = {
+export const mutators: M = {
   async todoCreate(tx: WriteTransaction, args: TodoCreateArgs) {
     await tx.set(`${args.spaceId}/todo/${args.id}`, args);
   },
@@ -10,6 +11,3 @@ export const mutators = {
     await tx.del(`${args.spaceId}/todo/${args.id}`);
   },
 };
-
-export type M = typeof mutators;
-export type MutationName = keyof M;
