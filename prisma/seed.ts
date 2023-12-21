@@ -9,6 +9,12 @@ async function main() {
       id: 'dummy-space-id',
     },
   });
+  await prisma.space.create({
+    data: {
+      version: 0,
+      id: 'dummy-space-id-2',
+    },
+  });
 }
 
 main()
