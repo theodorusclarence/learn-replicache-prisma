@@ -28,7 +28,7 @@ export default async function handler(
   const spaceId = req.query.spaceId as string;
   const pull = pullRequestSchema.parse(req.body);
   const cookie = pull.cookie;
-
+  //TODO[Dimension]: validate spaceId belongs to the current user
   try {
     //#region  //*=========== Prisma Transaction ===========
     const trxResponse = await prismaClient?.$transaction(

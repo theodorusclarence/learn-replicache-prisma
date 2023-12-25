@@ -53,6 +53,7 @@ model Todo {
   lastModified DateTime     @updatedAt
   isDeleted    Boolean      @default(false)
   GithubIssue  GithubIssue?
+  Event        Event[]
 }
 
 model GithubIssue {
@@ -65,4 +66,16 @@ model GithubIssue {
 
   @@unique([owner, repo, number])
   @@index([owner, repo, number], name: "owner_repo_number")
+}
+
+model Event {
+  id     String    @id @unique @default(cuid())
+  type   EventType
+  todoId String
+  todo   Todo      @relation(fields: [todoId], references: [id])
+}
+
+enum EventType {
+  CREATE_ISSUE
+  SYNC_ISSUE
 }
