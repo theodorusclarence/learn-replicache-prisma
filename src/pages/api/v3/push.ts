@@ -4,11 +4,9 @@ import Pusher from 'pusher';
 import { z } from 'zod';
 
 import { serverMutators } from '@/lib/server/mutators/index.mutator';
-import {
-  ClientGroupService,
-  ClientService,
-  SpaceService,
-} from '@/lib/server/services';
+import { ClientService } from '@/lib/server/services/client.service';
+import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
+import { SpaceService } from '@/lib/server/services/space.service';
 
 import { prismaClient } from '@/utils/server/prisma';
 
@@ -122,7 +120,7 @@ export default async function handler(
           }
 
           try {
-            await mutator(tx, mutation.args, nextVersion);
+            await mutator(tx, mutation.args, nextVersion, spaceId);
           } catch (error) {
             console.error(error);
             throw new Error(`Error processing mutation: ${mutation.name}`);

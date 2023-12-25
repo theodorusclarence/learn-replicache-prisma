@@ -14,12 +14,14 @@ export class TodoService {
   async create(
     args: TodoCreateArgs,
     version: number,
+    spaceId: string,
     githubSyncEnabled?: boolean
   ) {
     if (!githubSyncEnabled) {
       return this.tx.todo.create({
         data: {
           ...args,
+          spaceId,
           version,
         },
       });
@@ -36,6 +38,7 @@ export class TodoService {
     return this.tx.todo.create({
       data: {
         ...args,
+        spaceId,
         version,
         GithubIssue: {
           create: {
@@ -62,6 +65,7 @@ export class TodoService {
   async delete(
     args: TodoDeleteArgs,
     version: number,
+    _spaceId: string,
     githubSyncEnabled?: boolean
   ) {
     if (!githubSyncEnabled) {

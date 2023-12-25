@@ -2,12 +2,10 @@ import { Prisma } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
-import {
-  ClientGroupService,
-  ClientService,
-  SpaceService,
-  TodoService,
-} from '@/lib/server/services';
+import { ClientService } from '@/lib/server/services/client.service';
+import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
+import { SpaceService } from '@/lib/server/services/space.service';
+import { TodoService } from '@/lib/server/services/todo.service';
 
 import { prismaClient } from '@/utils/server/prisma';
 

@@ -42,7 +42,6 @@ export default function HomePage() {
 
     rep?.mutate.todoCreate({
       id: nanoid(),
-      spaceId,
       title: contentRef.current?.value ?? '',
       description: null,
     });
@@ -94,7 +93,6 @@ export default function HomePage() {
                     onClick={() => {
                       rep?.mutate.todoDelete({
                         id: todo.id,
-                        spaceId,
                       });
                     }}
                   >

@@ -34,6 +34,8 @@ export const useLoadReplicache = () => {
   const setRep = useReplicacheStore((state) => state.setRep);
 
   React.useEffect(() => {
+    if (!spaceId) return;
+
     const iid = nanoid();
 
     const r = new Replicache({
@@ -41,7 +43,8 @@ export const useLoadReplicache = () => {
       licenseKey: process.env.NEXT_PUBLIC_REPLICACHE_KEY as string,
       pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
       pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
-      mutators: clientMutators,
+      mutators: clientMutators(spaceId),
+      schemaVersion: '1',
     });
     setRep(r);
 

@@ -11,7 +11,8 @@ export type Mutator<
   : (
       tx: TransactionalPrismaClient,
       args: Args,
-      version: number
+      version: number,
+      spaceId: string
     ) => Promise<void>;
 
 export type M<Type = 'client' | 'server'> = TodoMutators<Type>;

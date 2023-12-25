@@ -1,18 +1,18 @@
-import { TodoService } from '@/lib/server/services';
+import { TodoService } from '@/lib/server/services/todo.service';
 
 import { TodoMutators } from '@/models/mutator/todo.model';
 
 const GITHUB_SYNC_ENABLED = process.env.NEXT_PUBLIC_SYNC_WITH_GITHUB === 'true';
 
 export const serverTodoMutators: TodoMutators<'server'> = {
-  todoCreate: async (tx, args, version) => {
+  todoCreate: async (tx, args, version, spaceId) => {
     const todoService = new TodoService(tx);
 
-    await todoService.create(args, version, GITHUB_SYNC_ENABLED);
+    await todoService.create(args, version, spaceId, GITHUB_SYNC_ENABLED);
   },
-  todoDelete: async (tx, args, version) => {
+  todoDelete: async (tx, args, version, spaceId) => {
     const todoService = new TodoService(tx);
 
-    await todoService.delete(args, version, GITHUB_SYNC_ENABLED);
+    await todoService.delete(args, version, spaceId, GITHUB_SYNC_ENABLED);
   },
 };
