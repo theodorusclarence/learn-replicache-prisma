@@ -15,7 +15,8 @@ model Space {
   version      Int      @default(0)
   lastModified DateTime @updatedAt
   user         User?
-  Todo         Todo[]
+  todos        Todo[]
+  events       Event[]
 }
 
 model ClientGroup {
@@ -53,6 +54,7 @@ model Todo {
   lastModified DateTime     @updatedAt
   isDeleted    Boolean      @default(false)
   GithubIssue  GithubIssue?
+  Event        Event[]
 }
 
 model GithubIssue {
@@ -65,4 +67,29 @@ model GithubIssue {
 
   @@unique([owner, repo, number])
   @@index([owner, repo, number], name: "owner_repo_number")
+}
+
+model Event {
+  id        String       @id @unique @default(cuid())
+  type      EventType
+  todoId    String
+  todo      Todo         @relation(fields: [todoId], references: [id])
+  createdAt DateTime     @default(now())
+  status    EventStatus?
+  spaceId   String
+  space     Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([todoId, type], name: "todo_id_type")
+  @@index([todoId], name: "todo_id")
+}
+
+enum EventType {
+  CREATE_ISSUE
+  SYNC_ISSUE
+}
+
+enum EventStatus {
+  SUCCESS
+  FAILED
+  PROCESSING
 }

@@ -26,30 +26,24 @@ export class TodoService {
         },
       });
     }
-    const issue = await octokit.rest.issues.create({
-      owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
-      repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
-      title: `${args.id}/${args.title}`,
-      body: `${args.description ?? ''}
-      Created from learn-replicache-prisma app
-      `,
-    });
 
-    return this.tx.todo.create({
+    const todo = await this.tx.todo.create({
       data: {
         ...args,
         spaceId,
         version,
-        GithubIssue: {
-          create: {
-            number: issue.data.number,
-            owner: issue.data.user?.login ?? '',
-            repo: issue.data.repository_url.split('/').pop() ?? '',
-            id: issue.data.node_id,
-          },
-        },
       },
     });
+
+    await this.tx.event.create({
+      data: {
+        todoId: todo.id,
+        type: 'CREATE_ISSUE',
+        spaceId,
+      },
+    });
+
+    return todo;
   }
 
   async update() {
@@ -117,6 +111,9 @@ export class TodoService {
       where: {
         spaceId,
         version: { gt: gtVersion ?? 0 },
+      },
+      include: {
+        GithubIssue: true,
       },
     });
   }

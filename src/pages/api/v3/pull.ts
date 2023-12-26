@@ -26,7 +26,7 @@ export default async function handler(
   const spaceId = req.query.spaceId as string;
   const pull = pullRequestSchema.parse(req.body);
   const cookie = pull.cookie;
-
+  //TODO[Dimension]: validate spaceId belongs to the current user
   try {
     //#region  //*=========== Prisma Transaction ===========
     const trxResponse = await prismaClient?.$transaction(
@@ -77,7 +77,7 @@ export default async function handler(
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // Required for Replicache to work
         maxWait: 5000, // default: 2000
-        timeout: 20000, // default: 5000
+        timeout: 10000, // default: 5000
       }
     );
     //#endregion  //*======== Prisma Transaction ===========
