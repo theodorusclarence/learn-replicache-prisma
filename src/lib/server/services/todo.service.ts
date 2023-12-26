@@ -1,7 +1,6 @@
 import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
 import { octokit } from '@/utils/server/octokit';
 import { TransactionalPrismaClient } from '@/utils/server/prisma';
-import { octokitQueue } from '@/workers/octokit.worker';
 
 export class TodoService {
   constructor(private tx: TransactionalPrismaClient) {}
@@ -27,14 +26,6 @@ export class TodoService {
         },
       });
     }
-    // const issue = await octokit.rest.issues.create({
-    //   owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
-    //   repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
-    //   title: `${args.id}/${args.title}`,
-    //   body: `${args.description ?? ''}
-    //   Created from learn-replicache-prisma app
-    //   `,
-    // });
 
     const todo = await this.tx.todo.create({
       data: {
@@ -44,22 +35,15 @@ export class TodoService {
       },
     });
 
-    // await this.tx.event.create({
-    //   data: {
-    //     type: 'CREATE_ISSUE',
-    //     todoId: todo.id,
-    //   },
-    // });
-    // push the event to the queue here
-    await octokitQueue.add(
-      'create-issue',
-      {
+    await this.tx.event.create({
+      data: {
         todoId: todo.id,
+        type: 'CREATE_ISSUE',
+        spaceId,
       },
-      {
-        delay: 5000,
-      }
-    );
+    });
+
+    return todo;
   }
 
   async update() {

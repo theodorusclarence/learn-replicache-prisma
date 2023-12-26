@@ -16,7 +16,7 @@
     "format:check": "prettier -c .",
     "postbuild": "next-sitemap --config next-sitemap.config.js",
     "prepare": "husky install",
-    "worker": "npx tsx --watch src/workers/octokit.worker.ts"
+    "worker": "npx tsx --watch src/workers/octokit-2.worker.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
