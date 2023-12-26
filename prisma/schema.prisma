@@ -69,13 +69,24 @@ model GithubIssue {
 }
 
 model Event {
-  id     String    @id @unique @default(cuid())
-  type   EventType
-  todoId String
-  todo   Todo      @relation(fields: [todoId], references: [id])
+  id        String       @id @unique @default(cuid())
+  type      EventType
+  todoId    String
+  todo      Todo         @relation(fields: [todoId], references: [id])
+  createdAt DateTime     @default(now())
+  status    EventStatus?
+
+  @@unique([todoId, type], name: "todo_id_type")
+  @@index([todoId], name: "todo_id")
 }
 
 enum EventType {
   CREATE_ISSUE
   SYNC_ISSUE
+}
+
+enum EventStatus {
+  SUCCESS
+  FAILED
+  PROCESSING
 }

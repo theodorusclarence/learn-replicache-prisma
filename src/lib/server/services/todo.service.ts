@@ -1,6 +1,7 @@
 import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
 import { octokit } from '@/utils/server/octokit';
 import { TransactionalPrismaClient } from '@/utils/server/prisma';
+import { octokitQueue } from '@/workers/octokit.worker';
 
 export class TodoService {
   constructor(private tx: TransactionalPrismaClient) {}
@@ -26,30 +27,39 @@ export class TodoService {
         },
       });
     }
-    const issue = await octokit.rest.issues.create({
-      owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
-      repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
-      title: `${args.id}/${args.title}`,
-      body: `${args.description ?? ''}
-      Created from learn-replicache-prisma app
-      `,
-    });
+    // const issue = await octokit.rest.issues.create({
+    //   owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'theodorusclarence',
+    //   repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
+    //   title: `${args.id}/${args.title}`,
+    //   body: `${args.description ?? ''}
+    //   Created from learn-replicache-prisma app
+    //   `,
+    // });
 
-    return this.tx.todo.create({
+    const todo = await this.tx.todo.create({
       data: {
         ...args,
         spaceId,
         version,
-        GithubIssue: {
-          create: {
-            number: issue.data.number,
-            owner: issue.data.user?.login ?? '',
-            repo: issue.data.repository_url.split('/').pop() ?? '',
-            id: issue.data.node_id,
-          },
-        },
       },
     });
+
+    // await this.tx.event.create({
+    //   data: {
+    //     type: 'CREATE_ISSUE',
+    //     todoId: todo.id,
+    //   },
+    // });
+    // push the event to the queue here
+    await octokitQueue.add(
+      'create-issue',
+      {
+        todoId: todo.id,
+      },
+      {
+        delay: 5000,
+      }
+    );
   }
 
   async update() {

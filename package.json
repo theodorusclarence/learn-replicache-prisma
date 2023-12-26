@@ -15,7 +15,8 @@
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "postbuild": "next-sitemap --config next-sitemap.config.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "worker": "npx tsx --watch src/workers/octokit.worker.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -24,7 +25,9 @@
     "@clerk/nextjs": "^4.28.1",
     "@octokit/webhooks": "^12.0.10",
     "@prisma/client": "5.6.0",
+    "bullmq": "^5.0.0",
     "clsx": "^1.2.1",
+    "dotenv": "^16.3.1",
     "immer": "^10.0.3",
     "lucide-react": "^0.260.0",
     "micro": "^10.0.1",
@@ -43,6 +46,7 @@
     "replicache-react": "^5.0.1",
     "svix": "^1.15.0",
     "tailwind-merge": "^1.13.2",
+    "tsx": "^4.7.0",
     "zod": "^3.22.4",
     "zustand": "^4.4.7"
   },
