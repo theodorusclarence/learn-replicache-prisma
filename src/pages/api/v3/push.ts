@@ -9,7 +9,7 @@ import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 
 import { prismaClient } from '@/utils/server/prisma';
-import { octokitQueue } from '@/workers/octokit-2.worker';
+import { octokitQueue } from '@/workers/octokit.worker';
 
 const pushRequestSchema = z.object({
   profileID: z.string(),

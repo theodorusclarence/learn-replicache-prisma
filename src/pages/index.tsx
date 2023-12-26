@@ -79,6 +79,7 @@ export default function HomePage() {
             >
               <label htmlFor='content'>Title</label>
               <input
+                readOnly
                 name='content'
                 ref={contentRef}
                 value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}

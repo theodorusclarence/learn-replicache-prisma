@@ -1,15 +1,11 @@
 import { GetResponseTypeFromEndpointMethod } from '@octokit/types';
 import { EventType } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
-import { Octokit } from 'octokit';
 
+import { octokit } from '@/utils/server/octokit';
 import { prismaClient } from '@/utils/server/prisma';
 import { redis_connection } from '@/utils/server/redis';
 import { errorQueue } from '@/workers/error-checker.worker';
-
-const octokit = new Octokit({
-  auth: 'random',
-});
 
 const WORKER_NAME = 'octokit';
 
@@ -18,7 +14,7 @@ export const octokitQueue = new Queue(WORKER_NAME, {
 });
 
 const worker = new Worker(
-  'WORKER_NAME',
+  WORKER_NAME,
   async (job) => {
     // get the job name -- event type
     const jobName = job.name as EventType;
@@ -59,7 +55,6 @@ const worker = new Worker(
           if (!todo) throw new Error('Todo not found');
           if (todo.GithubIssue) throw new Error('Issue already created');
 
-          //TODO: Failed events should know this is already existing
           issue = await octokit.rest.issues.create({
             owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'rtpa25',
             repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
@@ -89,6 +84,7 @@ const worker = new Worker(
           });
         } catch (error) {
           console.error(error);
+
           await errorQueue.add('octokit-failed-jobs', {
             eventId,
             issue,
