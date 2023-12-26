@@ -11,12 +11,13 @@ datasource db {
 }
 
 model Space {
-  id           String   @id @unique @default(cuid())
-  version      Int      @default(0)
-  lastModified DateTime @updatedAt
+  id           String    @id @unique @default(cuid())
+  version      Int       @default(0)
+  lastModified DateTime  @updatedAt
   user         User?
   todos        Todo[]
   events       Event[]
+  projects     Project[]
 }
 
 model ClientGroup {
@@ -55,6 +56,8 @@ model Todo {
   isDeleted    Boolean      @default(false)
   GithubIssue  GithubIssue?
   Event        Event[]
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model GithubIssue {
@@ -92,4 +95,14 @@ enum EventStatus {
   SUCCESS
   FAILED
   PROCESSING
+}
+
+model Project {
+  id        String   @id @unique
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  todos     Todo[]
 }
