@@ -20,6 +20,19 @@ export class SpaceService {
     });
   }
 
+  async incrementVersion(id: string) {
+    return this.tx.space.update({
+      where: {
+        id,
+      },
+      data: {
+        version: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
   async delete() {
     throw new Error('Not implemented');
   }

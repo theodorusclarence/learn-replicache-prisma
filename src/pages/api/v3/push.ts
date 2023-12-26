@@ -9,6 +9,7 @@ import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 
 import { prismaClient } from '@/utils/server/prisma';
+import { octokitQueue } from '@/workers/octokit.worker';
 
 const pushRequestSchema = z.object({
   profileID: z.string(),
@@ -154,7 +155,7 @@ export default async function handler(
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // Required for Replicache to work
         maxWait: 5000, // default: 2000
-        timeout: 20000, // default: 5000
+        timeout: 6000, // default: 5000
       }
     );
 
@@ -163,6 +164,28 @@ export default async function handler(
         ok: false,
       });
     }
+
+    //#region  //*=========== Process Event to Queue ===========
+    const events = await prismaClient.event.findMany({
+      where: {
+        spaceId,
+        status: null,
+      },
+    });
+    console.info('events in queue (push)', JSON.stringify(events));
+
+    await octokitQueue.addBulk(
+      events.map((event) => {
+        return {
+          name: event.type,
+          data: {
+            todoId: event.todoId,
+            eventId: event.id,
+          },
+        };
+      })
+    );
+    //#endregion  //*======== Process Event to Queue ===========
 
     sendPoke();
 
