@@ -150,14 +150,7 @@ export default async function handler(
         }
         //#endregion  //*======== Iterate and Process Mutations ===========
 
-        const events = await tx.event.findMany({
-          where: {
-            spaceId,
-            status: null,
-          },
-        });
-
-        return { events };
+        return true;
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // Required for Replicache to work
@@ -172,11 +165,17 @@ export default async function handler(
       });
     }
 
-    console.info('events in queue (push)', JSON.stringify(trxResponse.events));
-
     //#region  //*=========== Process Event to Queue ===========
+    const events = await prismaClient.event.findMany({
+      where: {
+        spaceId,
+        status: null,
+      },
+    });
+    console.info('events in queue (push)', JSON.stringify(events));
+
     await octokitQueue.addBulk(
-      trxResponse.events.map((event) => {
+      events.map((event) => {
         return {
           name: event.type,
           data: {

@@ -1,20 +1,24 @@
+import { GetResponseTypeFromEndpointMethod } from '@octokit/types';
 import { EventType } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
 import { Octokit } from 'octokit';
 
 import { prismaClient } from '@/utils/server/prisma';
 import { redis_connection } from '@/utils/server/redis';
+import { errorQueue } from '@/workers/error-checker.worker';
 
 const octokit = new Octokit({
   auth: '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',
 });
 
-export const octokitQueue = new Queue('octokit', {
+const WORKER_NAME = 'octokit';
+
+export const octokitQueue = new Queue(WORKER_NAME, {
   connection: redis_connection,
 });
 
 const worker = new Worker(
-  'octokit',
+  'WORKER_NAME',
   async (job) => {
     // get the job name -- event type
     const jobName = job.name as EventType;
@@ -22,17 +26,28 @@ const worker = new Worker(
     // decide which worker needs to run from the above
     switch (jobName) {
       case 'CREATE_ISSUE': {
+        let issue: GetResponseTypeFromEndpointMethod<
+          typeof octokit.rest.issues.create
+        > | null = null;
         const { todoId, eventId } = job.data;
-        await prismaClient.event.update({
-          where: {
-            id: eventId,
-          },
-          data: {
-            status: 'PROCESSING',
-          },
-        });
 
         try {
+          // Validate that the event status is still null (un processed)
+          const event = await prismaClient.event.findUnique({
+            where: { id: eventId },
+          });
+          if (event?.status !== null)
+            return console.error('Event already processed');
+
+          await prismaClient.event.update({
+            where: {
+              id: eventId,
+            },
+            data: {
+              status: 'PROCESSING',
+            },
+          });
+
           const todo = await prismaClient.todo.findUnique({
             where: {
               id: todoId,
@@ -45,7 +60,7 @@ const worker = new Worker(
           if (todo.GithubIssue) throw new Error('Issue already created');
 
           //TODO: Failed events should know this is already existing
-          const issue = await octokit.rest.issues.create({
+          issue = await octokit.rest.issues.create({
             owner: process.env.NEXT_PUBLIC_GITHUB_OWNER ?? 'rtpa25',
             repo: process.env.NEXT_PUBLIC_GITHUB_REPO ?? 'dimension-dump',
             title: `${todo.id}/${todo.title}`,
@@ -74,6 +89,10 @@ const worker = new Worker(
           });
         } catch (error) {
           console.error(error);
+          await errorQueue.add('octokit-failed-jobs', {
+            eventId,
+            issue,
+          });
           await prismaClient.event.update({
             where: {
               id: eventId,
@@ -103,11 +122,13 @@ const worker = new Worker(
 );
 
 worker.on('completed', (job) => {
-  console.info(`${job.id} has completed!`);
+  console.info(`Worker:${WORKER_NAME} → ${job.id} has completed!`);
 });
 
 worker.on('failed', (job, err) => {
-  console.info(`${job?.id} has failed with ${err.message}`);
+  console.info(
+    `Worker:${WORKER_NAME} → ${job?.id} has failed with ${err.message}`
+  );
 });
 
 export default worker;
