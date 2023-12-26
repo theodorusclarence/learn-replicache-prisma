@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ClientService } from '@/lib/server/services/client.service';
 import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
+import { ProjectService } from '@/lib/server/services/project.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 import { TodoService } from '@/lib/server/services/todo.service';
 
@@ -36,6 +37,7 @@ export default async function handler(
         const spaceService = new SpaceService(tx);
         const clientGroupService = new ClientGroupService(tx);
         const todoService = new TodoService(tx);
+        const projectService = new ProjectService(tx);
         //#endregion  //*======== Get Services ===========
 
         //#region  //*=========== Get Space's Version ===========
@@ -69,10 +71,14 @@ export default async function handler(
         //#endregion  //*======== Get Client's Last Mutation Ids Since Version ===========
 
         const todos = await todoService.findManyBySpace(spaceId, cookie ?? 0);
+        const projects = await projectService.findManyBySpace(
+          spaceId,
+          cookie ?? 0
+        );
 
         const responseCookie: Cookie = version;
 
-        return { todos, lastMutationIds, responseCookie };
+        return { todos, lastMutationIds, responseCookie, projects };
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable, // Required for Replicache to work
