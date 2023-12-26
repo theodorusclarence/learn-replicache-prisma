@@ -8,7 +8,7 @@ import { redis_connection } from '@/utils/server/redis';
 const WORKER_NAME = 'errors';
 
 const octokit = new Octokit({
-  auth: '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',
+  auth: 'random',
 });
 
 export const errorQueue = new Queue(WORKER_NAME, {
