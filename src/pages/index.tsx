@@ -44,6 +44,8 @@ export default function HomePage() {
       id: nanoid(),
       title: contentRef.current?.value ?? '',
       description: null,
+      //TODO: update this to reflect project structure
+      projectId: 'asd',
     });
 
     if (contentRef.current) contentRef.current.value = '';
