@@ -1,6 +1,9 @@
 import { GetResponseTypeFromEndpointMethod } from '@octokit/types';
 import { Queue, Worker } from 'bullmq';
 
+import { SpaceService } from '@/lib/server/services/space.service';
+
+import { sendPoke } from '@/pages/api/v3/push';
 import { octokit } from '@/utils/server/octokit';
 import { prismaClient } from '@/utils/server/prisma';
 import { redis_connection } from '@/utils/server/redis';
@@ -22,6 +25,7 @@ const worker = new Worker(
   WORKER_NAME,
   async (job) => {
     const { eventId, issue } = job.data as JobData;
+    const spaceService = new SpaceService(prismaClient);
 
     try {
       const event = await prismaClient.event.findUnique({
@@ -62,17 +66,26 @@ const worker = new Worker(
         return;
       }
 
-      await prismaClient.githubIssue.upsert({
+      const spaceNext = await spaceService.incrementVersion(todo.spaceId);
+      await prismaClient.todo.update({
         where: {
-          id: issue.data.node_id,
+          id: todo.id,
         },
-        update: {},
-        create: {
-          number: issue.data.number,
-          owner: issue.data.user?.login ?? '',
-          repo: issue.data.repository_url.split('/').pop() ?? '',
-          id: issue.data.node_id,
-          todoId: todo.id,
+        data: {
+          GithubIssue: {
+            connectOrCreate: {
+              where: {
+                id: issue.data.node_id,
+              },
+              create: {
+                number: issue.data.number,
+                owner: issue.data.user?.login ?? '',
+                repo: issue.data.repository_url.split('/').pop() ?? '',
+                id: issue.data.node_id,
+              },
+            },
+          },
+          version: spaceNext.version,
         },
       });
 
@@ -84,6 +97,7 @@ const worker = new Worker(
           status: 'SUCCESS',
         },
       });
+      sendPoke();
     } catch (error) {
       await errorQueue.add('octokit-failed-jobs', {
         eventId,

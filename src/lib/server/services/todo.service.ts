@@ -112,6 +112,9 @@ export class TodoService {
         spaceId,
         version: { gt: gtVersion ?? 0 },
       },
+      include: {
+        GithubIssue: true,
+      },
     });
   }
 }

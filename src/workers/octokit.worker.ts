@@ -2,6 +2,9 @@ import { GetResponseTypeFromEndpointMethod } from '@octokit/types';
 import { EventType } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
 
+import { SpaceService } from '@/lib/server/services/space.service';
+
+import { sendPoke } from '@/pages/api/v3/push';
 import { octokit } from '@/utils/server/octokit';
 import { prismaClient } from '@/utils/server/prisma';
 import { redis_connection } from '@/utils/server/redis';
@@ -18,6 +21,7 @@ const worker = new Worker(
   async (job) => {
     // get the job name -- event type
     const jobName = job.name as EventType;
+    const spaceService = new SpaceService(prismaClient);
 
     // decide which worker needs to run from the above
     switch (jobName) {
@@ -64,13 +68,21 @@ const worker = new Worker(
         `,
           });
 
-          await prismaClient.githubIssue.create({
+          const spaceNext = await spaceService.incrementVersion(todo.spaceId);
+          await prismaClient.todo.update({
+            where: {
+              id: todoId,
+            },
             data: {
-              number: issue.data.number,
-              owner: issue.data.user?.login ?? '',
-              repo: issue.data.repository_url.split('/').pop() ?? '',
-              id: issue.data.node_id,
-              todoId,
+              GithubIssue: {
+                create: {
+                  number: issue.data.number,
+                  owner: issue.data.user?.login ?? '',
+                  repo: issue.data.repository_url.split('/').pop() ?? '',
+                  id: issue.data.node_id,
+                },
+              },
+              version: spaceNext.version,
             },
           });
 
@@ -82,6 +94,8 @@ const worker = new Worker(
               status: 'SUCCESS',
             },
           });
+
+          sendPoke();
         } catch (error) {
           console.error(error);
 
