@@ -44,7 +44,7 @@ export const useLoadReplicache = () => {
       pushURL: `/api/v3/push?spaceId=${spaceId}&instance=${iid}`,
       pullURL: `/api/v3/pull?spaceId=${spaceId}&instance=${iid}`,
       mutators: clientMutators(spaceId),
-      schemaVersion: '1',
+      schemaVersion: process.env.NEXT_PUBLIC_SCHEMA_VERSION || '1',
     });
     setRep(r);
 

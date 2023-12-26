@@ -1,4 +1,3 @@
-import { Todo } from '@prisma/client';
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import * as React from 'react';
@@ -11,6 +10,7 @@ import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
+import { TodoDetail } from '@/models/todo.model';
 import { ConvertDate } from '@/utils/type-helpers';
 
 export default function HomePage() {
@@ -21,7 +21,7 @@ export default function HomePage() {
     rep,
     async (tx) => {
       const list = await tx
-        .scan<ConvertDate<Todo>>({ prefix: `${spaceId}/todo/` })
+        .scan<ConvertDate<TodoDetail>>({ prefix: `${spaceId}/todo/` })
         .entries()
         .toArray();
       // sort by title using localeCompare
@@ -79,6 +79,7 @@ export default function HomePage() {
             >
               <label htmlFor='content'>Title</label>
               <input
+                readOnly
                 name='content'
                 ref={contentRef}
                 value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}
@@ -100,6 +101,9 @@ export default function HomePage() {
                   </button>
                   <span>{todo.title}</span>
                   <span>{idbKey}</span>
+                  <span className='text-green-600'>
+                    #{todo.GithubIssue?.number}
+                  </span>
                 </div>
               ))}
             </div>
