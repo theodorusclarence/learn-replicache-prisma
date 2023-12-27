@@ -54,6 +54,7 @@ const worker = new Worker(
             },
             include: {
               GithubIssue: true,
+              project: true,
             },
           });
           if (!todo) throw new Error('Todo not found');
@@ -66,6 +67,7 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
         Created from learn-replicache-prisma app
         `,
+            labels: [todo.project?.name ?? 'no-project'],
           });
 
           const spaceNext = await spaceService.incrementVersion(todo.spaceId);
