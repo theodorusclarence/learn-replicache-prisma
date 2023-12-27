@@ -26,6 +26,15 @@ export class ProjectService {
       data: {
         isDeleted: true,
         version,
+        todos: {
+          updateMany: {
+            data: {
+              isDeleted: true,
+              version,
+            },
+            where: {},
+          },
+        },
       },
     });
   }

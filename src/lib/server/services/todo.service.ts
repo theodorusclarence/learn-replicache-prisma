@@ -30,7 +30,6 @@ export class TodoService {
     const todo = await this.tx.todo.create({
       data: {
         ...args,
-        projectId: null,
         spaceId,
         version,
       },
@@ -115,6 +114,7 @@ export class TodoService {
       },
       include: {
         GithubIssue: true,
+        project: true,
       },
     });
   }

@@ -3,6 +3,7 @@ import { Prisma, Todo } from '@prisma/client';
 export type TodoDetail = Prisma.TodoGetPayload<{
   include: {
     GithubIssue: true;
+    project: true;
   };
 }>;
 export type TodoCreateArgs = Omit<

@@ -17,7 +17,7 @@ import { ConvertDate } from '@/utils/type-helpers';
 export default function HomePage() {
   const rep = useReplicache();
   const spaceId = useSpace();
-
+  const [chosenProject, setChosenProject] = React.useState<string>();
   const todos = useSubscribe(
     rep,
     async (tx) => {
@@ -65,8 +65,7 @@ export default function HomePage() {
       id: nanoid(),
       title: contentRefTodo.current?.value ?? '',
       description: null,
-      //TODO: update this to reflect project structure
-      projectId: null,
+      projectId: chosenProject ?? null,
     });
 
     if (contentRefTodo.current) contentRefTodo.current.value = '';
@@ -111,14 +110,36 @@ export default function HomePage() {
               onSubmit={onSubmitTodo}
               className='mt-8 flex flex-col items-start space-y-2'
             >
-              <label htmlFor='content'>Title</label>
-              <input
-                readOnly
-                name='content'
-                ref={contentRefTodo}
-                value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}
-                required
-              />
+              <div className='flex'>
+                <div className='flex flex-col'>
+                  <label htmlFor='content'>Title</label>
+                  <input
+                    readOnly
+                    name='content'
+                    ref={contentRefTodo}
+                    value={`todo ${(todos.length + 1)
+                      .toString()
+                      .padStart(2, '0')}`}
+                    required
+                  />
+                </div>
+                <div className='flex flex-col'>
+                  <label htmlFor='project dropdown'>Project</label>
+                  <select
+                    name='project'
+                    id='project'
+                    value={chosenProject}
+                    defaultValue={projects[0]?.[1]?.id ?? ''}
+                    onChange={(e) => setChosenProject(e.target.value)}
+                  >
+                    {projects.map(([idbKey, project]) => (
+                      <option key={idbKey} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <Button type='submit'>Submit</Button>
             </form>
             <div className='mt-8 space-y-2'>
@@ -134,7 +155,7 @@ export default function HomePage() {
                     <Trash size={15} />
                   </button>
                   <span>{todo.title}</span>
-                  <span>{idbKey}</span>
+                  <span className='text-orange-400'>{todo.project?.name}</span>
                   <span className='text-green-600'>
                     #{todo.GithubIssue?.number}
                   </span>
@@ -172,7 +193,6 @@ export default function HomePage() {
                     <Trash size={15} />
                   </button>
                   <span>{project.name}</span>
-                  <span>{idbKey}</span>
                   <span className='text-green-600'>#{project.version}</span>
                 </div>
               ))}
