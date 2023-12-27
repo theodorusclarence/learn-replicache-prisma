@@ -46,7 +46,7 @@ export class ProjectService {
     return this.tx.project.findMany({
       where: {
         spaceId,
-        version: { gt: gtVersion ?? 0 },
+        version: { gte: gtVersion ?? 0 },
       },
     });
   }

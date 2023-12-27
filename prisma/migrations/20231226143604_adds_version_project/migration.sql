@@ -9,7 +9,7 @@
 ALTER TABLE "Project" ADD COLUMN     "version" INTEGER NOT NULL;
 
 -- AlterTable
-ALTER TABLE "Todo" ADD COLUMN     "projectId" TEXT NOT NULL;
+ALTER TABLE "Todo" ADD COLUMN     "projectId" TEXT;
 
 -- AddForeignKey
 ALTER TABLE "Todo" ADD CONSTRAINT "Todo_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

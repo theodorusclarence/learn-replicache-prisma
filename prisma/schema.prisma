@@ -99,7 +99,7 @@ enum EventStatus {
 
 model Project {
   id        String   @id @unique
-  name      String   @unique
+  name      String
   version   Int
   isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())

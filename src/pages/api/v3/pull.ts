@@ -75,7 +75,6 @@ export default async function handler(
           spaceId,
           cookie ?? 0
         );
-
         const responseCookie: Cookie = version;
 
         return { todos, lastMutationIds, responseCookie, projects };
@@ -97,11 +96,18 @@ export default async function handler(
     const pullResponse = {
       lastMutationIDChanges: trxResponse.lastMutationIds,
       cookie: trxResponse.responseCookie,
-      patch: trxResponse.todos.map((todo) => ({
-        op: todo.isDeleted ? 'del' : 'put',
-        key: `${todo.spaceId}/todo/${todo.id}`,
-        value: todo.isDeleted ? undefined : todo,
-      })),
+      patch: [
+        ...trxResponse.todos.map((todo) => ({
+          op: todo.isDeleted ? 'del' : 'put',
+          key: `${todo.spaceId}/todo/${todo.id}`,
+          value: todo.isDeleted ? undefined : todo,
+        })),
+        ...trxResponse.projects.map((project) => ({
+          op: project.isDeleted ? 'del' : 'put',
+          key: `${project.spaceId}/project/${project.id}`,
+          value: project.isDeleted ? undefined : project,
+        })),
+      ],
     };
 
     return res.status(200).json(pullResponse);

@@ -30,6 +30,7 @@ export class TodoService {
     const todo = await this.tx.todo.create({
       data: {
         ...args,
+        projectId: null,
         spaceId,
         version,
       },
@@ -110,7 +111,7 @@ export class TodoService {
     return this.tx.todo.findMany({
       where: {
         spaceId,
-        version: { gt: gtVersion ?? 0 },
+        version: { gte: gtVersion ?? 0 },
       },
       include: {
         GithubIssue: true,

@@ -1,3 +1,4 @@
+import { Project } from '@prisma/client';
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import * as React from 'react';
@@ -35,20 +36,51 @@ export default function HomePage() {
     { default: [] }
   );
 
-  const contentRef = React.useRef<HTMLInputElement>(null);
+  const projects = useSubscribe(
+    rep,
+    async (tx) => {
+      const list = await tx
+        .scan<ConvertDate<Project>>({ prefix: `${spaceId}/project/` })
+        .entries()
+        .toArray();
 
-  const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+      // sort by title using localeCompare
+      list.sort((a, b) =>
+        a[1].name.localeCompare(b[1].name, undefined, {
+          numeric: true,
+        })
+      );
+      return list;
+    },
+    { default: [] }
+  );
+
+  const contentRefTodo = React.useRef<HTMLInputElement>(null);
+  const contentRefProject = React.useRef<HTMLInputElement>(null);
+
+  const onSubmitTodo: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
     rep?.mutate.todoCreate({
       id: nanoid(),
-      title: contentRef.current?.value ?? '',
+      title: contentRefTodo.current?.value ?? '',
       description: null,
       //TODO: update this to reflect project structure
-      projectId: 'asd',
+      projectId: null,
     });
 
-    if (contentRef.current) contentRef.current.value = '';
+    if (contentRefTodo.current) contentRefTodo.current.value = '';
+  };
+
+  const onSubmitProject: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+
+    rep?.mutate.projectCreate({
+      id: nanoid(),
+      name: contentRefProject.current?.value ?? '',
+    });
+
+    if (contentRefProject.current) contentRefProject.current.value = '';
   };
 
   const setSpace = useSpaceStore((state) => state.setSpaceId);
@@ -58,7 +90,7 @@ export default function HomePage() {
       <Seo templateTitle='Home' />
 
       <main>
-        <section className=''>
+        <section className='flex'>
           <div className='layout min-h-screen py-20'>
             <pre className='overflow-x-auto text-xs'>
               {JSON.stringify(spaceId, null, 2)}
@@ -76,14 +108,14 @@ export default function HomePage() {
             </Button>
 
             <form
-              onSubmit={onSubmit}
+              onSubmit={onSubmitTodo}
               className='mt-8 flex flex-col items-start space-y-2'
             >
               <label htmlFor='content'>Title</label>
               <input
                 readOnly
                 name='content'
-                ref={contentRef}
+                ref={contentRefTodo}
                 value={`todo ${(todos.length + 1).toString().padStart(2, '0')}`}
                 required
               />
@@ -106,6 +138,42 @@ export default function HomePage() {
                   <span className='text-green-600'>
                     #{todo.GithubIssue?.number}
                   </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className='flex flex-col'>
+            <form
+              onSubmit={onSubmitProject}
+              className='mt-8 flex flex-col items-start space-y-2'
+            >
+              <label htmlFor='content'>Project Name</label>
+              <input
+                readOnly
+                name='content'
+                ref={contentRefProject}
+                value={`project ${(projects.length + 1)
+                  .toString()
+                  .padStart(2, '0')}`}
+                required
+              />
+              <Button type='submit'>Submit</Button>
+            </form>
+            <div className='mt-8 space-y-2'>
+              {projects.map(([idbKey, project]) => (
+                <div key={idbKey} className='space-x-4'>
+                  <button
+                    onClick={() => {
+                      rep?.mutate.projectDelete({
+                        id: project.id,
+                      });
+                    }}
+                  >
+                    <Trash size={15} />
+                  </button>
+                  <span>{project.name}</span>
+                  <span>{idbKey}</span>
+                  <span className='text-green-600'>#{project.version}</span>
                 </div>
               ))}
             </div>
