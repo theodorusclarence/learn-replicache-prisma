@@ -117,6 +117,67 @@ const worker = new Worker(
 
         break;
       }
+      case 'SYNC_ISSUE': {
+        let issue: GetResponseTypeFromEndpointMethod<
+          typeof octokit.rest.issues.update
+        > | null = null;
+        const { todoId, eventId } = job.data;
+
+        try {
+          // Validate that the event status is still null (un processed)
+          const event = await prismaClient.event.findUnique({
+            where: { id: eventId },
+          });
+
+          if (event?.status !== null)
+            return console.error('Event already processed');
+
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'PROCESSING' },
+          });
+
+          const todo = await prismaClient.todo.findUnique({
+            where: { id: todoId },
+            include: { GithubIssue: true, project: true },
+          });
+
+          if (!todo) throw new Error('Todo not found');
+
+          issue = await octokit.rest.issues.update({
+            owner:
+              todo.GithubIssue?.owner ??
+              process.env.NEXT_PUBLIC_GITHUB_OWNER ??
+              '',
+            repo:
+              todo.GithubIssue?.repo ??
+              process.env.NEXT_PUBLIC_GITHUB_REPO ??
+              '',
+            issue_number: todo.GithubIssue?.number ?? 0,
+            body: `${todo.description ?? ''}
+          Updated from learn-replicache-prisma app
+          `,
+            labels: [todo.project?.name ?? 'no-project'],
+          });
+
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'SUCCESS' },
+          });
+
+          sendPoke();
+        } catch (error) {
+          console.error(error);
+
+          await errorQueue.add('octokit-failed-jobs', { eventId, issue });
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'FAILED' },
+          });
+        }
+
+        break;
+      }
       default:
         break;
     }

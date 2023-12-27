@@ -1,4 +1,8 @@
-import { TodoCreateArgs, TodoDeleteArgs } from '@/models/todo.model';
+import {
+  TodoCreateArgs,
+  TodoDeleteArgs,
+  TodoUpdateArgs,
+} from '@/models/todo.model';
 import { octokit } from '@/utils/server/octokit';
 import { TransactionalPrismaClient } from '@/utils/server/prisma';
 
@@ -46,8 +50,31 @@ export class TodoService {
     return todo;
   }
 
-  async update() {
-    throw new Error('Not implemented');
+  async update(
+    args: TodoUpdateArgs,
+    version: number,
+    spaceId: string,
+    githubSyncEnabled?: boolean
+  ) {
+    if (!githubSyncEnabled) {
+      return this.tx.todo.update({
+        where: { id: args.id },
+        data: { ...args, spaceId, version },
+      });
+    }
+
+    const todo = await this.tx.todo.update({
+      where: { id: args.id },
+      data: { ...args, spaceId, version, projectId: args.projectId || null },
+    });
+
+    await this.tx.event.upsert({
+      where: { todo_id_type: { todoId: args.id, type: 'SYNC_ISSUE' } },
+      create: { todoId: args.id, type: 'SYNC_ISSUE', spaceId },
+      update: { status: null },
+    });
+
+    return todo;
   }
 
   /**
