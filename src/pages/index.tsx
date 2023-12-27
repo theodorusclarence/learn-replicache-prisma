@@ -17,7 +17,7 @@ import { ConvertDate } from '@/utils/type-helpers';
 export default function HomePage() {
   const rep = useReplicache();
   const spaceId = useSpace();
-  const [chosenProject, setChosenProject] = React.useState<string>();
+
   const todos = useSubscribe(
     rep,
     async (tx) => {
@@ -57,6 +57,7 @@ export default function HomePage() {
 
   const contentRefTodo = React.useRef<HTMLInputElement>(null);
   const contentRefProject = React.useRef<HTMLInputElement>(null);
+  const projectSelectRef = React.useRef<HTMLSelectElement>(null);
 
   const onSubmitTodo: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -65,7 +66,7 @@ export default function HomePage() {
       id: nanoid(),
       title: contentRefTodo.current?.value ?? '',
       description: null,
-      projectId: chosenProject ?? null,
+      projectId: projectSelectRef.current?.value ?? null,
     });
 
     if (contentRefTodo.current) contentRefTodo.current.value = '';
@@ -89,7 +90,7 @@ export default function HomePage() {
       <Seo templateTitle='Home' />
 
       <main>
-        <section className='flex'>
+        <section>
           <div className='layout min-h-screen py-20'>
             <pre className='overflow-x-auto text-xs'>
               {JSON.stringify(spaceId, null, 2)}
@@ -105,97 +106,103 @@ export default function HomePage() {
             >
               Change Space
             </Button>
-
-            <form
-              onSubmit={onSubmitTodo}
-              className='mt-8 flex flex-col items-start space-y-2'
-            >
-              <div className='flex'>
-                <div className='flex flex-col'>
-                  <label htmlFor='content'>Title</label>
+            <div className='mt-8 flex flex-col gap-8 md:flex-row md:justify-between'>
+              <div>
+                <form
+                  onSubmit={onSubmitTodo}
+                  className='flex flex-col items-start space-y-2'
+                >
+                  <div className='flex'>
+                    <div className='flex flex-col'>
+                      <label htmlFor='content'>Title</label>
+                      <input
+                        readOnly
+                        name='content'
+                        ref={contentRefTodo}
+                        value={`todo ${(todos.length + 1)
+                          .toString()
+                          .padStart(2, '0')}`}
+                        required
+                      />
+                    </div>
+                    <div className='flex flex-col'>
+                      <label htmlFor='project'>Project</label>
+                      <select
+                        name='project'
+                        id='project'
+                        ref={projectSelectRef}
+                        defaultValue={projects[0]?.[1]?.id ?? ''}
+                      >
+                        {projects.map(([idbKey, project]) => (
+                          <option key={idbKey} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <Button type='submit'>Submit</Button>
+                </form>
+                <div className='mt-8 space-y-2'>
+                  {todos.map(([idbKey, todo]) => (
+                    <div key={idbKey} className='space-x-4'>
+                      <button
+                        onClick={() => {
+                          rep?.mutate.todoDelete({
+                            id: todo.id,
+                          });
+                        }}
+                      >
+                        <Trash size={15} />
+                      </button>
+                      <span>{todo.title}</span>
+                      <span className='text-orange-400'>
+                        {todo.project?.name}
+                      </span>
+                      <span className='text-green-600'>
+                        #{todo.GithubIssue?.number}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className='flex flex-col'>
+                <form
+                  onSubmit={onSubmitProject}
+                  className='flex flex-col items-start space-y-2'
+                >
+                  <label htmlFor='content'>Project Name</label>
                   <input
                     readOnly
                     name='content'
-                    ref={contentRefTodo}
-                    value={`todo ${(todos.length + 1)
+                    ref={contentRefProject}
+                    value={`project ${(projects.length + 1)
                       .toString()
                       .padStart(2, '0')}`}
                     required
                   />
-                </div>
-                <div className='flex flex-col'>
-                  <label htmlFor='project dropdown'>Project</label>
-                  <select
-                    name='project'
-                    id='project'
-                    value={chosenProject}
-                    defaultValue={projects[0]?.[1]?.id ?? ''}
-                    onChange={(e) => setChosenProject(e.target.value)}
-                  >
-                    {projects.map(([idbKey, project]) => (
-                      <option key={idbKey} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Button type='submit'>Submit</Button>
+                </form>
+                <div className='mt-8 space-y-2'>
+                  {projects.map(([idbKey, project]) => (
+                    <div key={idbKey} className='space-x-4'>
+                      <button
+                        onClick={() => {
+                          rep?.mutate.projectDelete({
+                            id: project.id,
+                          });
+                        }}
+                      >
+                        <Trash size={15} />
+                      </button>
+                      <span>{project.name}</span>
+                      <span className='text-green-600'>
+                        ver: {project.version}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <Button type='submit'>Submit</Button>
-            </form>
-            <div className='mt-8 space-y-2'>
-              {todos.map(([idbKey, todo]) => (
-                <div key={idbKey} className='space-x-4'>
-                  <button
-                    onClick={() => {
-                      rep?.mutate.todoDelete({
-                        id: todo.id,
-                      });
-                    }}
-                  >
-                    <Trash size={15} />
-                  </button>
-                  <span>{todo.title}</span>
-                  <span className='text-orange-400'>{todo.project?.name}</span>
-                  <span className='text-green-600'>
-                    #{todo.GithubIssue?.number}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className='flex flex-col'>
-            <form
-              onSubmit={onSubmitProject}
-              className='mt-8 flex flex-col items-start space-y-2'
-            >
-              <label htmlFor='content'>Project Name</label>
-              <input
-                readOnly
-                name='content'
-                ref={contentRefProject}
-                value={`project ${(projects.length + 1)
-                  .toString()
-                  .padStart(2, '0')}`}
-                required
-              />
-              <Button type='submit'>Submit</Button>
-            </form>
-            <div className='mt-8 space-y-2'>
-              {projects.map(([idbKey, project]) => (
-                <div key={idbKey} className='space-x-4'>
-                  <button
-                    onClick={() => {
-                      rep?.mutate.projectDelete({
-                        id: project.id,
-                      });
-                    }}
-                  >
-                    <Trash size={15} />
-                  </button>
-                  <span>{project.name}</span>
-                  <span className='text-green-600'>#{project.version}</span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
