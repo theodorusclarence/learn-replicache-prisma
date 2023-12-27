@@ -11,6 +11,7 @@ import Button from '@/components/buttons/Button';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
+import { IDB_KEY } from '@/models/idb-key.model';
 import { TodoDetail } from '@/models/todo.model';
 import { ConvertDate } from '@/utils/type-helpers';
 
@@ -22,7 +23,7 @@ export default function HomePage() {
     rep,
     async (tx) => {
       const list = await tx
-        .scan<ConvertDate<TodoDetail>>({ prefix: `${spaceId}/todo/` })
+        .scan<ConvertDate<TodoDetail>>({ prefix: IDB_KEY.TODO({ spaceId }) })
         .entries()
         .toArray();
       // sort by title using localeCompare
@@ -40,7 +41,7 @@ export default function HomePage() {
     rep,
     async (tx) => {
       const list = await tx
-        .scan<ConvertDate<Project>>({ prefix: `${spaceId}/project/` })
+        .scan<ConvertDate<Project>>({ prefix: IDB_KEY.PROJECT({ spaceId }) })
         .entries()
         .toArray();
 

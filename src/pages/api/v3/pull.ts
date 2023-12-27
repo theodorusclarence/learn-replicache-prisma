@@ -8,6 +8,7 @@ import { ProjectService } from '@/lib/server/services/project.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 import { TodoService } from '@/lib/server/services/todo.service';
 
+import { IDB_KEY } from '@/models/idb-key.model';
 import { prismaClient } from '@/utils/server/prisma';
 
 const pullRequestSchema = z.object({
@@ -99,12 +100,12 @@ export default async function handler(
       patch: [
         ...trxResponse.todos.map((todo) => ({
           op: todo.isDeleted ? 'del' : 'put',
-          key: `${todo.spaceId}/todo/${todo.id}`,
+          key: IDB_KEY.TODO({ spaceId: todo.spaceId, id: todo.id }),
           value: todo.isDeleted ? undefined : todo,
         })),
         ...trxResponse.projects.map((project) => ({
           op: project.isDeleted ? 'del' : 'put',
-          key: `${project.spaceId}/project/${project.id}`,
+          key: IDB_KEY.PROJECT({ spaceId: project.spaceId, id: project.id }),
           value: project.isDeleted ? undefined : project,
         })),
       ],
