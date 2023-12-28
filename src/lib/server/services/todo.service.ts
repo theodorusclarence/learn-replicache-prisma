@@ -56,23 +56,96 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: { id: args.id },
-        data: { ...args, spaceId, version },
-      });
-    }
+    const { labelOnIssues, ...rest } = args;
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
-      data: { ...args, spaceId, version, projectId: args.projectId || null },
+      data: {
+        spaceId,
+        version,
+        ...rest,
+        labelOnIssues: {},
+      },
+      include: {
+        labelOnIssues: {
+          include: {
+            label: true,
+          },
+        },
+      },
     });
 
-    await this.tx.event.upsert({
-      where: { todo_id_type: { todoId: args.id, type: 'SYNC_ISSUE' } },
-      create: { todoId: args.id, type: 'SYNC_ISSUE', spaceId },
-      update: { status: null },
+    const lablesToAdd = labelOnIssues?.filter(
+      (loi) =>
+        !todo.labelOnIssues?.some(
+          (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+        )
+    );
+
+    const labelsToRemove = todo.labelOnIssues?.filter(
+      (loi) =>
+        !labelOnIssues?.some(
+          (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+        )
+    );
+
+    await this.tx.labelOnIssues.deleteMany({
+      where: {
+        AND: [
+          {
+            todoId: todo.id,
+          },
+          {
+            labelId: {
+              in: labelsToRemove?.map((loi) => loi.labelId) ?? [],
+            },
+          },
+        ],
+      },
     });
+
+    for (const label of lablesToAdd ?? []) {
+      await this.tx.label.upsert({
+        where: {
+          id: label.labelId,
+        },
+        create: {
+          id: label.labelId,
+          name: label.label.name,
+          color: label.label.color,
+          LabelOnIssues: {
+            create: {
+              todoId: todo.id,
+              id: label.id,
+            },
+          },
+        },
+        update: {
+          LabelOnIssues: {
+            connectOrCreate: {
+              where: {
+                label_id_todo_id: {
+                  labelId: label.labelId,
+                  todoId: todo.id,
+                },
+              },
+              create: {
+                id: label.id,
+                todoId: todo.id,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (githubSyncEnabled) {
+      await this.tx.event.upsert({
+        where: { todo_id_type: { todoId: todo.id, type: 'SYNC_ISSUE' } },
+        create: { todoId: todo.id, type: 'SYNC_ISSUE', spaceId },
+        update: { status: null },
+      });
+    }
 
     return todo;
   }
@@ -141,6 +214,11 @@ export class TodoService {
       },
       include: {
         GithubIssue: true,
+        labelOnIssues: {
+          include: {
+            label: true,
+          },
+        },
         project: true,
       },
     });

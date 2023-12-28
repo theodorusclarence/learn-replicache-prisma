@@ -2,6 +2,7 @@ import { Project } from '@prisma/client';
 import { Trash } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import * as React from 'react';
+import CreatableSelect from 'react-select/creatable';
 import { useSubscribe } from 'replicache-react';
 
 import { useReplicache } from '@/hooks/useReplicache';
@@ -144,9 +145,13 @@ export default function HomePage() {
                   </div>
                   <Button type='submit'>Submit</Button>
                 </form>
-                <div className='mt-8 space-y-2'>
+                <div className='mt-8 space-y-4'>
                   {todos.map(([idbKey, todo]) => (
-                    <TodoRow key={idbKey} todo={todo} idbKey={idbKey} />
+                    <TodoRow
+                      key={idbKey}
+                      todo={todo as ConvertDate<TodoDetail>}
+                      idbKey={idbKey}
+                    />
                   ))}
                 </div>
               </div>
@@ -203,6 +208,41 @@ export function TodoRow({
   const rep = useReplicache();
   const spaceId = useSpace();
   const [project, setProject] = React.useState(todo.projectId ?? '');
+  const [chosenLables, setChosenLables] = React.useState<
+    { label: string; value: string }[]
+  >(
+    (todo.labelOnIssues ?? []).map((l) => ({
+      label: l.label.name.toLowerCase(),
+      value: l.label.name.toLowerCase(),
+    }))
+  );
+
+  React.useEffect(() => {
+    setChosenLables(
+      (todo.labelOnIssues ?? []).map((l) => ({
+        label: l.label.name.toLowerCase(),
+        value: l.label.name.toLowerCase(),
+      }))
+    );
+  }, [todo.labelOnIssues]);
+
+  const labels = React.useMemo(() => {
+    return [
+      ...(todo.labelOnIssues ?? []).map((l) => ({
+        label: l.label.name.toLowerCase(),
+        value: l.label.name.toLowerCase(),
+      })),
+      { label: 'bug', value: 'bug' },
+      { label: 'feature', value: 'feature' },
+      { label: 'enhancement', value: 'enhancement' },
+      { label: 'documentation', value: 'documentation' },
+      { label: 'help wanted', value: 'help wanted' },
+      { label: 'good first issue', value: 'good first issue' },
+      { label: 'invalid', value: 'invalid' },
+      { label: 'question', value: 'question' },
+      { label: 'wontfix', value: 'wontfix' },
+    ].filter((v, i, a) => a.findIndex((t) => t.value === v.value) === i);
+  }, [todo.labelOnIssues]);
 
   const projects = useSubscribe(
     rep,
@@ -224,7 +264,7 @@ export function TodoRow({
   );
 
   return (
-    <div key={idbKey} className='space-x-4'>
+    <div key={idbKey} className='flex items-center space-x-4'>
       <button
         onClick={() => {
           rep?.mutate.todoDelete({
@@ -243,8 +283,6 @@ export function TodoRow({
           setProject(e.target.value);
           rep?.mutate.todoUpdate({
             id: todo.id,
-            title: todo.title,
-            description: todo.description,
             projectId: e.target.value ?? null,
           });
         }}
@@ -257,6 +295,40 @@ export function TodoRow({
         ))}
       </select>
       <span className='text-green-600'>#{todo.GithubIssue?.number}</span>
+      <CreatableSelect
+        isMulti
+        options={labels}
+        value={chosenLables}
+        onChange={(selected) => {
+          setChosenLables(Array.from(selected ?? []));
+        }}
+        onMenuClose={() => {
+          rep?.mutate.todoUpdate({
+            id: todo.id,
+            labelOnIssues: chosenLables.map((l) => {
+              // check is label exist
+              const existingLabel = todo.labelOnIssues?.find(
+                (loi) => loi.label.name.toLowerCase() === l.value
+              );
+              if (existingLabel) {
+                return existingLabel;
+              } else {
+                const labelId = nanoid();
+                return {
+                  id: nanoid(),
+                  label: {
+                    id: labelId,
+                    name: l.value,
+                    color: '000000',
+                  },
+                  labelId,
+                  todoId: todo.id,
+                };
+              }
+            }),
+          });
+        }}
+      />
     </div>
   );
 }
