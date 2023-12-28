@@ -24,21 +24,10 @@ export function TodoRow({
 }) {
   const rep = useReplicache();
   const spaceId = useSpace();
-  const [project, setProject] = React.useState(todo.projectId ?? '');
-  const [chosenLables, setChosenLables] = React.useState<
-    { label: string; value: string }[]
-  >([]);
+  const project = todo.projectId ?? '';
 
-  React.useEffect(() => {
-    setChosenLables(
-      (todo.labelOnIssues ?? []).map((l) => ({
-        label: l.label.name.toLowerCase(),
-        value: l.label.name.toLowerCase(),
-      }))
-    );
-  }, [todo.labelOnIssues]);
-
-  const labels = [
+  //#region  //*=========== Labels ===========
+  const labelsOptions = [
     { label: 'bug', value: 'bug' },
     { label: 'feature', value: 'feature' },
     { label: 'enhancement', value: 'enhancement' },
@@ -49,6 +38,18 @@ export function TodoRow({
     { label: 'question', value: 'question' },
     { label: 'wontfix', value: 'wontfix' },
   ];
+  const [chosenLabels, setChosenLabels] = React.useState<
+    { label: string; value: string }[]
+  >([]);
+  React.useEffect(() => {
+    setChosenLabels(
+      (todo.labelOnIssues ?? []).map((l) => ({
+        label: l.label.name.toLowerCase(),
+        value: l.label.name.toLowerCase(),
+      }))
+    );
+  }, [todo.labelOnIssues]);
+  //#endregion  //*======== Labels ===========
 
   const projects = useSubscribe(
     rep,
@@ -68,6 +69,7 @@ export function TodoRow({
     },
     { default: [] }
   );
+
   return (
     <div key={idbKey} className='flex items-center gap-4'>
       <IconButton
@@ -89,10 +91,9 @@ export function TodoRow({
             id='project'
             value={project}
             onChange={(e) => {
-              setProject(e.target.value);
               rep?.mutate.todoUpdate({
                 id: todo.id,
-                projectId: e.target.value ?? null,
+                projectId: e.target.value === '' ? null : e.target.value,
               });
             }}
           >
@@ -110,20 +111,21 @@ export function TodoRow({
         </div>
         <CreatableSelect
           isMulti
-          options={labels}
-          value={chosenLables}
+          options={labelsOptions}
+          value={chosenLabels}
           onChange={(selected) => {
-            setChosenLables(Array.from(selected ?? []));
+            setChosenLabels(Array.from(selected ?? []));
           }}
           closeMenuOnSelect={false}
           onMenuClose={() => {
             rep?.mutate.todoUpdate({
               id: todo.id,
-              labelOnIssues: chosenLables.map((l) => {
+              labelOnIssues: chosenLabels.map((label) => {
                 // check is label exist
                 const existingLabel = todo.labelOnIssues?.find(
-                  (loi) => loi.label.name.toLowerCase() === l.value
+                  (loi) => loi.label.name.toLowerCase() === label.value
                 );
+
                 if (existingLabel) {
                   return existingLabel;
                 } else {
@@ -132,7 +134,7 @@ export function TodoRow({
                     id: nanoid(),
                     label: {
                       id: labelId,
-                      name: l.value,
+                      name: label.value,
                       color: '#000000',
                     },
                     labelId,

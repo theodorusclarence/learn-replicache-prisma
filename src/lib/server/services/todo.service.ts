@@ -57,6 +57,7 @@ export class TodoService {
     githubSyncEnabled?: boolean
   ) {
     const { labelOnIssues, ...rest } = args;
+    const shouldUpdateLabels = Boolean(labelOnIssues);
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
@@ -75,68 +76,68 @@ export class TodoService {
       },
     });
 
-    const lablesToAdd = labelOnIssues?.filter(
-      (loi) =>
-        !todo.labelOnIssues?.some(
-          (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
-        )
-    );
-
-    const labelsToRemove = todo.labelOnIssues?.filter(
-      (loi) =>
-        !labelOnIssues?.some(
-          (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
-        )
-    );
-
-    await this.tx.labelOnIssues.deleteMany({
-      where: {
-        AND: [
-          {
-            todoId: todo.id,
-          },
-          {
-            labelId: {
-              in: labelsToRemove?.map((loi) => loi.labelId) ?? [],
-            },
-          },
-        ],
-      },
-    });
-
-    for (const label of lablesToAdd ?? []) {
-      await this.tx.label.upsert({
+    if (shouldUpdateLabels) {
+      const labelsToRemove = todo.labelOnIssues?.filter(
+        (loi) =>
+          !labelOnIssues?.some(
+            (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+          )
+      );
+      await this.tx.labelOnIssues.deleteMany({
         where: {
-          name: label.label.name,
-        },
-        create: {
-          id: label.labelId,
-          name: label.label.name,
-          color: label.label.color,
-          LabelOnIssues: {
-            create: {
+          AND: [
+            {
               todoId: todo.id,
-              id: label.id,
+            },
+            {
+              labelId: {
+                in: labelsToRemove?.map((loi) => loi.labelId) ?? [],
+              },
+            },
+          ],
+        },
+      });
+
+      const labelsToAdd = labelOnIssues?.filter(
+        (loi) =>
+          !todo.labelOnIssues?.some(
+            (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+          )
+      );
+      for (const label of labelsToAdd ?? []) {
+        await this.tx.label.upsert({
+          where: {
+            name: label.label.name,
+          },
+          create: {
+            id: label.labelId,
+            name: label.label.name,
+            color: label.label.color,
+            LabelOnIssues: {
+              create: {
+                todoId: todo.id,
+                id: label.id,
+              },
             },
           },
-        },
-        update: {
-          LabelOnIssues: {
-            connectOrCreate: {
-              where: {
-                label_id_todo_id: {
-                  labelId: label.labelId,
+          update: {
+            LabelOnIssues: {
+              connectOrCreate: {
+                where: {
+                  label_id_todo_id: {
+                    labelId: label.labelId,
+                    todoId: todo.id,
+                  },
+                },
+                create: {
+                  id: label.id,
                   todoId: todo.id,
                 },
               },
-              create: {
-                id: label.id,
-                todoId: todo.id,
-              },
             },
           },
-        },
-      });
+        });
+      }
     }
 
     if (githubSyncEnabled) {
