@@ -54,6 +54,7 @@ const worker = new Worker(
             },
             include: {
               GithubIssue: true,
+              project: true,
             },
           });
           if (!todo) throw new Error('Todo not found');
@@ -66,6 +67,7 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
         Created from learn-replicache-prisma app
         `,
+            labels: [`project: ${todo.project?.name}` ?? 'project: no-project'],
           });
 
           const spaceNext = await spaceService.incrementVersion(todo.spaceId);
@@ -104,12 +106,78 @@ const worker = new Worker(
             issue,
           });
           await prismaClient.event.update({
-            where: {
-              id: eventId,
+            where: { id: eventId },
+            data: { status: 'FAILED' },
+          });
+        }
+
+        break;
+      }
+      case 'SYNC_ISSUE': {
+        let issue: GetResponseTypeFromEndpointMethod<
+          typeof octokit.rest.issues.update
+        > | null = null;
+        const { todoId, eventId } = job.data;
+
+        try {
+          // Validate that the event status is still null (un processed)
+          const event = await prismaClient.event.findUnique({
+            where: { id: eventId },
+          });
+
+          if (event?.status !== null)
+            return console.error('Event already processed');
+
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'PROCESSING' },
+          });
+
+          const todo = await prismaClient.todo.findUnique({
+            where: { id: todoId },
+            include: {
+              GithubIssue: { include: { labels: true } },
+              project: true,
             },
-            data: {
-              status: 'FAILED',
-            },
+          });
+
+          if (!todo) throw new Error('Todo not found');
+
+          issue = await octokit.rest.issues.update({
+            owner:
+              todo.GithubIssue?.owner ??
+              process.env.NEXT_PUBLIC_GITHUB_OWNER ??
+              '',
+            repo:
+              todo.GithubIssue?.repo ??
+              process.env.NEXT_PUBLIC_GITHUB_REPO ??
+              '',
+            title: `${todo.id}/${todo.title}`,
+            issue_number: todo.GithubIssue?.number ?? 0,
+            body: `${todo.description ?? ''}
+          Updated from learn-replicache-prisma app
+          `,
+            labels: [
+              `project: ${todo.project?.name}` ?? 'project: no-project',
+              ...(todo.GithubIssue?.labels ?? [])
+                .filter((label) => !label.name.startsWith('project:'))
+                .map((label) => label.name),
+            ],
+          });
+
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'SUCCESS' },
+          });
+
+          sendPoke();
+        } catch (error) {
+          console.error(error);
+
+          await errorQueue.add('octokit-failed-jobs', { eventId, issue });
+          await prismaClient.event.update({
+            where: { id: eventId },
+            data: { status: 'FAILED' },
           });
         }
 

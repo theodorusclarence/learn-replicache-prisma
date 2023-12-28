@@ -17,7 +17,14 @@ export default async function handler(
     req.body.payload
   ) as EmitterWebhookEvent<'issues'>['payload'];
 
-  if (!(payload.action === 'opened' || payload.action === 'closed'))
+  if (
+    !(
+      payload.action === 'opened' ||
+      payload.action === 'closed' ||
+      payload.action === 'labeled' ||
+      payload.action === 'unlabeled'
+    )
+  )
     return res.status(404).json({ status: 'error', message: 'Not found' });
 
   const space = await prismaClient.space.findFirst({
@@ -89,13 +96,46 @@ export default async function handler(
     });
   }
 
+  if (payload.action === 'labeled' || payload.action === 'unlabeled') {
+    const { issue, label } = payload;
+    if (label?.name.startsWith('project:')) {
+      const projectId = label.name.replace('project: ', '');
+      const project = await prismaClient.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) {
+        return res
+          .status(400)
+          .json({ status: 'error', message: 'Project not found' });
+      }
+
+      await prismaClient.todo.update({
+        where: { id: issue.node_id },
+        data: { projectId: project.id, version: nextVersion },
+      });
+    } else {
+      await prismaClient.githubIssue.update({
+        where: { id: issue.node_id },
+        data: {
+          labels: {
+            deleteMany: {},
+            createMany: {
+              data: (issue.labels || []).map((label) => ({
+                id: label.node_id,
+                name: label.name,
+                color: label.color,
+              })),
+            },
+          },
+        },
+      });
+    }
+  }
+
   await prismaClient.space.update({
-    where: {
-      id: space.id,
-    },
-    data: {
-      version: nextVersion,
-    },
+    where: { id: space.id },
+    data: { version: nextVersion },
   });
 
   sendPoke();
