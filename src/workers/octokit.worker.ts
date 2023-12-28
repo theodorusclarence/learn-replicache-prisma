@@ -67,7 +67,7 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
         Created from learn-replicache-prisma app
         `,
-            labels: [todo.project?.name ?? 'no-project'],
+            labels: [`project: ${todo.project?.name}` ?? 'project: no-project'],
           });
 
           const spaceNext = await spaceService.incrementVersion(todo.spaceId);
@@ -106,12 +106,8 @@ const worker = new Worker(
             issue,
           });
           await prismaClient.event.update({
-            where: {
-              id: eventId,
-            },
-            data: {
-              status: 'FAILED',
-            },
+            where: { id: eventId },
+            data: { status: 'FAILED' },
           });
         }
 
@@ -139,7 +135,10 @@ const worker = new Worker(
 
           const todo = await prismaClient.todo.findUnique({
             where: { id: todoId },
-            include: { GithubIssue: true, project: true },
+            include: {
+              GithubIssue: { include: { labels: true } },
+              project: true,
+            },
           });
 
           if (!todo) throw new Error('Todo not found');
@@ -157,7 +156,12 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
           Updated from learn-replicache-prisma app
           `,
-            labels: [todo.project?.name ?? 'no-project'],
+            labels: [
+              `project: ${todo.project?.name}` ?? 'project: no-project',
+              ...(todo.GithubIssue?.labels ?? [])
+                .filter((label) => !label.name.startsWith('project:'))
+                .map((label) => label.name),
+            ],
           });
 
           await prismaClient.event.update({

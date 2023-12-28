@@ -59,7 +59,7 @@ export class TodoService {
     if (!githubSyncEnabled) {
       return this.tx.todo.update({
         where: { id: args.id },
-        data: { ...args, spaceId, version },
+        data: { ...args, spaceId, version, projectId: args.projectId || null },
       });
     }
 
@@ -135,12 +135,9 @@ export class TodoService {
    */
   async findManyBySpace(spaceId: string, gtVersion?: number) {
     return this.tx.todo.findMany({
-      where: {
-        spaceId,
-        version: { gte: gtVersion ?? 0 },
-      },
+      where: { spaceId, version: { gte: gtVersion ?? 0 } },
       include: {
-        GithubIssue: true,
+        GithubIssue: { include: { labels: true } },
         project: true,
       },
     });

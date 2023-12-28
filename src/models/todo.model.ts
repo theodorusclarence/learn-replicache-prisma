@@ -2,7 +2,7 @@ import { Prisma, Todo } from '@prisma/client';
 
 export type TodoDetail = Prisma.TodoGetPayload<{
   include: {
-    GithubIssue: true;
+    GithubIssue: { include: { labels: true } };
     project: true;
   };
 }>;

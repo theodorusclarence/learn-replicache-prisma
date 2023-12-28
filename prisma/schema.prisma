@@ -61,15 +61,24 @@ model Todo {
 }
 
 model GithubIssue {
-  id     String @id @unique
-  todoId String @unique
-  todo   Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  id     String  @id @unique
+  todoId String  @unique
+  todo   Todo    @relation(fields: [todoId], references: [id], onDelete: Cascade)
   number Int
   owner  String
   repo   String
+  labels Label[]
 
   @@unique([owner, repo, number])
   @@index([owner, repo, number], name: "owner_repo_number")
+}
+
+model Label {
+  id      String      @id @unique
+  issueId String      @unique
+  issue   GithubIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  name    String
+  color   String      @default("fefefe")
 }
 
 model Event {
