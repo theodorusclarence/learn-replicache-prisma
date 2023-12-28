@@ -15,7 +15,8 @@
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "postbuild": "next-sitemap --config next-sitemap.config.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "load-pull": "npx ts-node  --compiler-options {\"module\":\"CommonJS\"}  src/script/load-pull.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -24,12 +25,14 @@
     "@clerk/nextjs": "^4.28.1",
     "@octokit/webhooks": "^12.0.10",
     "@prisma/client": "5.6.0",
+    "axios": "^1.6.3",
     "bullmq": "^5.0.0",
     "clsx": "^1.2.1",
     "immer": "^10.0.3",
     "lucide-react": "^0.260.0",
     "micro": "^10.0.1",
     "nanoid": "^5.0.4",
+    "nanoid:3": "npm:nanoid@^3.3.6",
     "next": "^13.5.6",
     "octokit": "^3.1.2",
     "pg": "^8.11.3",
