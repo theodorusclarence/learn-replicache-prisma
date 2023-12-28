@@ -128,7 +128,6 @@ const worker = new Worker(
           const event = await prismaClient.event.findUnique({
             where: { id: eventId },
           });
-
           if (event?.status !== null)
             return console.error('Event already processed');
 
@@ -141,7 +140,6 @@ const worker = new Worker(
             where: { id: todoId },
             include: { GithubIssue: true, project: true },
           });
-
           if (!todo) throw new Error('Todo not found');
 
           issue = await octokit.rest.issues.update({
