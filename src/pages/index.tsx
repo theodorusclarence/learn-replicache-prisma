@@ -210,12 +210,7 @@ export function TodoRow({
   const [project, setProject] = React.useState(todo.projectId ?? '');
   const [chosenLables, setChosenLables] = React.useState<
     { label: string; value: string }[]
-  >(
-    (todo.labelOnIssues ?? []).map((l) => ({
-      label: l.label.name.toLowerCase(),
-      value: l.label.name.toLowerCase(),
-    }))
-  );
+  >([]);
 
   React.useEffect(() => {
     setChosenLables(
@@ -226,23 +221,17 @@ export function TodoRow({
     );
   }, [todo.labelOnIssues]);
 
-  const labels = React.useMemo(() => {
-    return [
-      ...(todo.labelOnIssues ?? []).map((l) => ({
-        label: l.label.name.toLowerCase(),
-        value: l.label.name.toLowerCase(),
-      })),
-      { label: 'bug', value: 'bug' },
-      { label: 'feature', value: 'feature' },
-      { label: 'enhancement', value: 'enhancement' },
-      { label: 'documentation', value: 'documentation' },
-      { label: 'help wanted', value: 'help wanted' },
-      { label: 'good first issue', value: 'good first issue' },
-      { label: 'invalid', value: 'invalid' },
-      { label: 'question', value: 'question' },
-      { label: 'wontfix', value: 'wontfix' },
-    ].filter((v, i, a) => a.findIndex((t) => t.value === v.value) === i);
-  }, [todo.labelOnIssues]);
+  const labels = [
+    { label: 'bug', value: 'bug' },
+    { label: 'feature', value: 'feature' },
+    { label: 'enhancement', value: 'enhancement' },
+    { label: 'documentation', value: 'documentation' },
+    { label: 'help wanted', value: 'help wanted' },
+    { label: 'good first issue', value: 'good first issue' },
+    { label: 'invalid', value: 'invalid' },
+    { label: 'question', value: 'question' },
+    { label: 'wontfix', value: 'wontfix' },
+  ];
 
   const projects = useSubscribe(
     rep,
@@ -262,7 +251,6 @@ export function TodoRow({
     },
     { default: [] }
   );
-
   return (
     <div key={idbKey} className='flex items-center space-x-4'>
       <button
@@ -302,6 +290,7 @@ export function TodoRow({
         onChange={(selected) => {
           setChosenLables(Array.from(selected ?? []));
         }}
+        closeMenuOnSelect={false}
         onMenuClose={() => {
           rep?.mutate.todoUpdate({
             id: todo.id,
@@ -319,7 +308,7 @@ export function TodoRow({
                   label: {
                     id: labelId,
                     name: l.value,
-                    color: '000000',
+                    color: '#000000',
                   },
                   labelId,
                   todoId: todo.id,

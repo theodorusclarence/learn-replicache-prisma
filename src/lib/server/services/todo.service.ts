@@ -107,7 +107,7 @@ export class TodoService {
     for (const label of lablesToAdd ?? []) {
       await this.tx.label.upsert({
         where: {
-          id: label.labelId,
+          name: label.label.name,
         },
         create: {
           id: label.labelId,
