@@ -17,7 +17,14 @@ export default async function handler(
     req.body.payload
   ) as EmitterWebhookEvent<'issues'>['payload'];
 
-  if (!(payload.action === 'opened' || payload.action === 'closed'))
+  if (
+    !(
+      payload.action === 'opened' ||
+      payload.action === 'closed' ||
+      payload.action === 'labeled' ||
+      payload.action === 'unlabeled'
+    )
+  )
     return res.status(404).json({ status: 'error', message: 'Not found' });
 
   const space = await prismaClient.space.findFirst({
@@ -84,6 +91,92 @@ export default async function handler(
       },
       data: {
         isDeleted: true,
+        version: nextVersion,
+      },
+    });
+  }
+
+  if (payload.action === 'labeled' || payload.action === 'unlabeled') {
+    const { issue } = payload;
+
+    const todo = await prismaClient.todo.findFirst({
+      where: {
+        GithubIssue: {
+          id: issue.node_id,
+        },
+      },
+      include: {
+        labelOnTodos: {
+          include: {
+            label: true,
+          },
+        },
+      },
+    });
+
+    if (!todo) {
+      return res
+        .status(400)
+        .json({ status: 'error', message: 'Todo not found' });
+    }
+
+    const labels = issue.labels?.filter(
+      (label) => !label.name.startsWith('project:')
+    );
+
+    const labelsToRemove = todo.labelOnTodos.filter(
+      (lot) => !labels?.find((label) => lot.label.name === label.name)
+    );
+    await prismaClient.labelOnTodo.deleteMany({
+      where: {
+        AND: [
+          {
+            todoId: todo.id,
+          },
+          {
+            labelId: {
+              in: labelsToRemove.map((lot) => lot.labelId),
+            },
+          },
+        ],
+      },
+    });
+
+    const labelsToAdd = labels?.filter(
+      (label) => !todo.labelOnTodos.find((lot) => lot.label.name === label.name)
+    );
+    for (const label of labelsToAdd ?? []) {
+      await prismaClient.label.upsert({
+        where: {
+          name: label.name,
+        },
+        create: {
+          id: nanoid(),
+          name: label.name,
+          color: label.color,
+          labelOnTodo: {
+            create: {
+              todoId: todo.id,
+              id: nanoid(),
+            },
+          },
+        },
+        update: {
+          labelOnTodo: {
+            create: {
+              todoId: todo.id,
+              id: nanoid(),
+            },
+          },
+        },
+      });
+    }
+
+    await prismaClient.todo.update({
+      where: {
+        id: todo.id,
+      },
+      data: {
         version: nextVersion,
       },
     });

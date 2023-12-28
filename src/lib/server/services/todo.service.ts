@@ -21,16 +21,6 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.create({
-        data: {
-          ...args,
-          spaceId,
-          version,
-        },
-      });
-    }
-
     const todo = await this.tx.todo.create({
       data: {
         ...args,
@@ -39,13 +29,15 @@ export class TodoService {
       },
     });
 
-    await this.tx.event.create({
-      data: {
-        todoId: todo.id,
-        type: 'CREATE_ISSUE',
-        spaceId,
-      },
-    });
+    if (githubSyncEnabled) {
+      await this.tx.event.create({
+        data: {
+          todoId: todo.id,
+          type: 'CREATE_ISSUE',
+          spaceId,
+        },
+      });
+    }
 
     return todo;
   }
@@ -56,23 +48,97 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: { id: args.id },
-        data: { ...args, spaceId, version },
-      });
-    }
+    const { labelOnTodos, ...rest } = args;
+    const shouldUpdateLabels = Boolean(labelOnTodos);
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
-      data: { ...args, spaceId, version, projectId: args.projectId || null },
+      data: {
+        spaceId,
+        version,
+        ...rest,
+        labelOnTodos: {},
+      },
+      include: {
+        labelOnTodos: {
+          include: {
+            label: true,
+          },
+        },
+      },
     });
 
-    await this.tx.event.upsert({
-      where: { todo_id_type: { todoId: args.id, type: 'SYNC_ISSUE' } },
-      create: { todoId: args.id, type: 'SYNC_ISSUE', spaceId },
-      update: { status: null },
-    });
+    if (shouldUpdateLabels) {
+      const labelsToRemove = todo.labelOnTodos?.filter(
+        (lot) =>
+          !labelOnTodos?.some(
+            (lot2) => lot2.labelId === lot.labelId && lot2.todoId === lot.todoId
+          )
+      );
+      await this.tx.labelOnTodo.deleteMany({
+        where: {
+          AND: [
+            {
+              todoId: todo.id,
+            },
+            {
+              labelId: {
+                in: labelsToRemove?.map((lot) => lot.labelId) ?? [],
+              },
+            },
+          ],
+        },
+      });
+
+      const labelsToAdd = labelOnTodos?.filter(
+        (lot) =>
+          !todo.labelOnTodos?.some(
+            (lot2) => lot2.labelId === lot.labelId && lot2.todoId === lot.todoId
+          )
+      );
+      for (const label of labelsToAdd ?? []) {
+        await this.tx.label.upsert({
+          where: {
+            name: label.label.name,
+          },
+          create: {
+            id: label.labelId,
+            name: label.label.name,
+            color: label.label.color,
+            labelOnTodo: {
+              create: {
+                todoId: todo.id,
+                id: label.id,
+              },
+            },
+          },
+          update: {
+            labelOnTodo: {
+              connectOrCreate: {
+                where: {
+                  label_id_todo_id: {
+                    labelId: label.labelId,
+                    todoId: todo.id,
+                  },
+                },
+                create: {
+                  id: label.id,
+                  todoId: todo.id,
+                },
+              },
+            },
+          },
+        });
+      }
+    }
+
+    if (githubSyncEnabled) {
+      await this.tx.event.upsert({
+        where: { todo_id_type: { todoId: todo.id, type: 'SYNC_ISSUE' } },
+        create: { todoId: todo.id, type: 'SYNC_ISSUE', spaceId },
+        update: { status: null },
+      });
+    }
 
     return todo;
   }
@@ -89,18 +155,6 @@ export class TodoService {
     _spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: {
-          id: args.id,
-        },
-        data: {
-          isDeleted: true,
-          version,
-        },
-      });
-    }
-
     const updatedTodo = await this.tx.todo.update({
       where: {
         id: args.id,
@@ -114,12 +168,14 @@ export class TodoService {
       },
     });
 
-    await octokit.rest.issues.update({
-      owner: updatedTodo.GithubIssue?.owner ?? '',
-      repo: updatedTodo.GithubIssue?.repo ?? '',
-      issue_number: updatedTodo.GithubIssue?.number ?? 0,
-      state: 'closed',
-    });
+    if (githubSyncEnabled) {
+      await octokit.rest.issues.update({
+        owner: updatedTodo.GithubIssue?.owner ?? '',
+        repo: updatedTodo.GithubIssue?.repo ?? '',
+        issue_number: updatedTodo.GithubIssue?.number ?? 0,
+        state: 'closed',
+      });
+    }
 
     return true;
   }
@@ -141,6 +197,11 @@ export class TodoService {
       },
       include: {
         GithubIssue: true,
+        labelOnTodos: {
+          include: {
+            label: true,
+          },
+        },
         project: true,
       },
     });
