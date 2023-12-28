@@ -17,7 +17,14 @@ export default async function handler(
     req.body.payload
   ) as EmitterWebhookEvent<'issues'>['payload'];
 
-  if (!(payload.action === 'opened' || payload.action === 'closed'))
+  if (
+    !(
+      payload.action === 'opened' ||
+      payload.action === 'closed' ||
+      payload.action === 'labeled' ||
+      payload.action === 'unlabeled'
+    )
+  )
     return res.status(404).json({ status: 'error', message: 'Not found' });
 
   const space = await prismaClient.space.findFirst({
@@ -84,6 +91,43 @@ export default async function handler(
       },
       data: {
         isDeleted: true,
+        version: nextVersion,
+      },
+    });
+  }
+  if (payload.action === 'labeled' || payload.action === 'unlabeled') {
+    const { issue } = payload;
+
+    const todo = await prismaClient.todo.findFirst({
+      where: {
+        GithubIssue: {
+          id: issue.node_id,
+        },
+      },
+    });
+    if (!todo) {
+      return res
+        .status(400)
+        .json({ status: 'error', message: 'Todo not found' });
+    }
+
+    const labels = issue.labels?.filter(
+      (label) => !label.name.startsWith('project:')
+    );
+    await prismaClient.todo.update({
+      where: { id: todo.id },
+      data: {
+        tags: {
+          deleteMany: {},
+          createMany: {
+            data:
+              labels?.map((label) => ({
+                id: nanoid(),
+                name: label.name,
+                color: label.color,
+              })) ?? [],
+          },
+        },
         version: nextVersion,
       },
     });

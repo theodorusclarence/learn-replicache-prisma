@@ -67,7 +67,11 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
         Created from learn-replicache-prisma app
         `,
-            labels: [todo.project?.name ?? 'no-project'],
+            labels: [
+              todo.project?.name
+                ? `project: ${todo.project.name}`
+                : 'project: none',
+            ],
           });
 
           const spaceNext = await spaceService.incrementVersion(todo.spaceId);
@@ -156,7 +160,9 @@ const worker = new Worker(
           Updated from learn-replicache-prisma app
           `,
             labels: [
-              todo.project?.name ?? 'no-project',
+              todo.project?.name
+                ? `project: ${todo.project.name}`
+                : 'project: none',
               ...(todo.tags?.map((tag) => tag.name) ?? []),
             ],
           });

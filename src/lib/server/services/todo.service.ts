@@ -67,16 +67,14 @@ export class TodoService {
 
         tags: {
           deleteMany: {},
-          connectOrCreate: tags?.map((tag) => ({
-            where: {
-              id: tag.id,
-            },
-            create: {
-              id: tag.id,
-              name: tag.name,
-              color: tag.color,
-            },
-          })),
+          createMany: {
+            data:
+              tags?.map((tag) => ({
+                id: tag.id,
+                name: tag.name,
+                color: tag.color,
+              })) ?? [],
+          },
         },
       },
     });
