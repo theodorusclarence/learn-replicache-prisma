@@ -5,10 +5,10 @@ export type ConvertDate<T> = {
 export type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
 };
-
 export type PartialExcept<T, K extends keyof T> = RecursivePartial<T> &
   Pick<T, K>;
 
+/** @see https://stackoverflow.com/a/76786394 */
 type PickNullable<T> = {
   [P in keyof T as null extends T[P] ? P : never]: T[P];
 };

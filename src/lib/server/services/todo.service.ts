@@ -21,16 +21,6 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.create({
-        data: {
-          ...args,
-          spaceId,
-          version,
-        },
-      });
-    }
-
     const todo = await this.tx.todo.create({
       data: {
         ...args,
@@ -39,13 +29,15 @@ export class TodoService {
       },
     });
 
-    await this.tx.event.create({
-      data: {
-        todoId: todo.id,
-        type: 'CREATE_ISSUE',
-        spaceId,
-      },
-    });
+    if (githubSyncEnabled) {
+      await this.tx.event.create({
+        data: {
+          todoId: todo.id,
+          type: 'CREATE_ISSUE',
+          spaceId,
+        },
+      });
+    }
 
     return todo;
   }
@@ -163,18 +155,6 @@ export class TodoService {
     _spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: {
-          id: args.id,
-        },
-        data: {
-          isDeleted: true,
-          version,
-        },
-      });
-    }
-
     const updatedTodo = await this.tx.todo.update({
       where: {
         id: args.id,
@@ -188,12 +168,14 @@ export class TodoService {
       },
     });
 
-    await octokit.rest.issues.update({
-      owner: updatedTodo.GithubIssue?.owner ?? '',
-      repo: updatedTodo.GithubIssue?.repo ?? '',
-      issue_number: updatedTodo.GithubIssue?.number ?? 0,
-      state: 'closed',
-    });
+    if (githubSyncEnabled) {
+      await octokit.rest.issues.update({
+        owner: updatedTodo.GithubIssue?.owner ?? '',
+        repo: updatedTodo.GithubIssue?.repo ?? '',
+        issue_number: updatedTodo.GithubIssue?.number ?? 0,
+        state: 'closed',
+      });
+    }
 
     return true;
   }
