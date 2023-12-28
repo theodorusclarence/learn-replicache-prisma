@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently --kill-others -n app,studio \"next dev\" \"BROWSER=none npx prisma studio\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -59,6 +59,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.2",
     "eslint": "^8.45.0",
     "eslint-config-next": "^13.4.10",
     "eslint-config-prettier": "^8.8.0",

@@ -47,3 +47,10 @@ export function getFromSessionStorage(key: string): string | null {
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export const removeUndefinedFromObject = <T extends Record<string, unknown>>(
+  obj: T
+): T => {
+  Object.keys(obj).forEach((key) => obj[key] === undefined && delete obj[key]);
+  return obj;
+};

@@ -36,3 +36,4 @@ yarn-error.log*
 
 # changelog
 CHANGELOG.md
+docker-compose.yaml

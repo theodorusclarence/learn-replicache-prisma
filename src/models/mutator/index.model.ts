@@ -1,5 +1,6 @@
 import { WriteTransaction } from 'replicache';
 
+import { ProjectMutators } from '@/models/mutator/project.model';
 import { TodoMutators } from '@/models/mutator/todo.model';
 import { TransactionalPrismaClient } from '@/utils/server/prisma';
 
@@ -15,4 +16,5 @@ export type Mutator<
       spaceId: string
     ) => Promise<void>;
 
-export type M<Type = 'client' | 'server'> = TodoMutators<Type>;
+export type M<Type = 'client' | 'server'> = TodoMutators<Type> &
+  ProjectMutators<Type>;

@@ -15,4 +15,8 @@ export const serverTodoMutators: TodoMutators<'server'> = {
 
     await todoService.delete(args, version, spaceId, GITHUB_SYNC_ENABLED);
   },
+  todoUpdate: async (tx, args, version, spaceId) => {
+    const todoService = new TodoService(tx);
+    await todoService.update(args, version, spaceId, GITHUB_SYNC_ENABLED);
+  },
 };
