@@ -75,10 +75,10 @@ model GithubIssue {
 
 model Label {
   id      String      @id @unique
-  issueId String      @unique
+  issueId String
   issue   GithubIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   name    String
-  color   String      @default("fefefe")
+  color   String?     @default("fefefe")
 }
 
 model Event {

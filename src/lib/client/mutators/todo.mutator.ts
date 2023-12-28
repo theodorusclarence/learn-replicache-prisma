@@ -20,9 +20,16 @@ export const clientTodoMutators: (spaceId: string) => TodoMutators<'client'> = (
     await tx.del(IDB_KEY.TODO({ spaceId, id: args.id }));
   },
   async todoUpdate(tx, args) {
+    const oldTodo = await tx.get(IDB_KEY.TODO({ spaceId, id: args.id }));
+    console.log(
+      '🚀 ~ file: todo.mutator.ts:24 ~ todoUpdate ~ oldTodo:',
+      oldTodo
+    );
+
     await tx.set(
       IDB_KEY.TODO({ spaceId, id: args.id }),
       removeUndefinedFromObject({
+        ...(typeof oldTodo === 'object' ? oldTodo : {}),
         ...args,
         lastModified: new Date().toISOString(),
       })

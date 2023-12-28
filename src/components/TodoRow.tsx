@@ -1,5 +1,6 @@
 import { Project } from '@prisma/client';
 import { Trash } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import React, { useMemo } from 'react';
 import Select from 'react-select';
 import { useSubscribe } from 'replicache-react';
@@ -87,8 +88,6 @@ const TodoRow = ({
           setProject(e.target.value);
           rep?.mutate.todoUpdate({
             id: todo.id,
-            title: todo.title,
-            description: todo.description,
             projectId: e.target.value ?? null,
           });
         }}
@@ -109,12 +108,14 @@ const TodoRow = ({
         value={selectedLabels}
         onChange={(selected) => setSelectedLabels(Array.from(selected ?? []))}
         onMenuClose={() => {
-          // rep?.mutate.todoUpdate({
-          //   id: todo.id,
-          //   title: todo.title,
-          //   description: todo.description,
-          //   labels: selectedLabels.map((l) => l.value),
-          // });
+          rep?.mutate.todoUpdate({
+            id: todo.id,
+            labels: selectedLabels.map((l) => ({
+              id: nanoid(),
+              name: l.value,
+              color: null,
+            })),
+          });
         }}
       />
     </div>

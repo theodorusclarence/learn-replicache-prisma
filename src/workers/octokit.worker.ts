@@ -152,6 +152,7 @@ const worker = new Worker(
               todo.GithubIssue?.repo ??
               process.env.NEXT_PUBLIC_GITHUB_REPO ??
               '',
+            title: `${todo.id}/${todo.title}`,
             issue_number: todo.GithubIssue?.number ?? 0,
             body: `${todo.description ?? ''}
           Updated from learn-replicache-prisma app

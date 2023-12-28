@@ -56,23 +56,35 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: { id: args.id },
-        data: { ...args, spaceId, version, projectId: args.projectId || null },
-      });
-    }
+    const { labels, ...rest } = args;
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
-      data: { ...args, spaceId, version, projectId: args.projectId || null },
+      data: {
+        version,
+        spaceId,
+        ...rest,
+        GithubIssue: {
+          update: {
+            data: {
+              labels: {
+                createMany: {
+                  data: labels ?? [],
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
-    await this.tx.event.upsert({
-      where: { todo_id_type: { todoId: args.id, type: 'SYNC_ISSUE' } },
-      create: { todoId: args.id, type: 'SYNC_ISSUE', spaceId },
-      update: { status: null },
-    });
+    if (githubSyncEnabled) {
+      await this.tx.event.upsert({
+        where: { todo_id_type: { todoId: todo.id, type: 'SYNC_ISSUE' } },
+        create: { todoId: todo.id, type: 'SYNC_ISSUE', spaceId },
+        update: { status: null },
+      });
+    }
 
     return todo;
   }
