@@ -56,23 +56,36 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    if (!githubSyncEnabled) {
-      return this.tx.todo.update({
-        where: { id: args.id },
-        data: { ...args, spaceId, version },
-      });
-    }
+    const { tags, ...rest } = args;
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
-      data: { ...args, spaceId, version, projectId: args.projectId || null },
+      data: {
+        ...rest,
+        spaceId,
+        version,
+
+        tags: {
+          deleteMany: {},
+          createMany: {
+            data:
+              tags?.map((tag) => ({
+                id: tag.id,
+                name: tag.name,
+                color: tag.color,
+              })) ?? [],
+          },
+        },
+      },
     });
 
-    await this.tx.event.upsert({
-      where: { todo_id_type: { todoId: args.id, type: 'SYNC_ISSUE' } },
-      create: { todoId: args.id, type: 'SYNC_ISSUE', spaceId },
-      update: { status: null },
-    });
+    if (githubSyncEnabled) {
+      await this.tx.event.upsert({
+        where: { todo_id_type: { todoId: todo.id, type: 'SYNC_ISSUE' } },
+        create: { todoId: todo.id, type: 'SYNC_ISSUE', spaceId },
+        update: { status: null },
+      });
+    }
 
     return todo;
   }
@@ -142,6 +155,7 @@ export class TodoService {
       include: {
         GithubIssue: true,
         project: true,
+        tags: true,
       },
     });
   }

@@ -67,7 +67,11 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
         Created from learn-replicache-prisma app
         `,
-            labels: [todo.project?.name ?? 'no-project'],
+            labels: [
+              todo.project?.name
+                ? `project: ${todo.project.name}`
+                : 'project: none',
+            ],
           });
 
           const spaceNext = await spaceService.incrementVersion(todo.spaceId);
@@ -128,7 +132,6 @@ const worker = new Worker(
           const event = await prismaClient.event.findUnique({
             where: { id: eventId },
           });
-
           if (event?.status !== null)
             return console.error('Event already processed');
 
@@ -139,9 +142,8 @@ const worker = new Worker(
 
           const todo = await prismaClient.todo.findUnique({
             where: { id: todoId },
-            include: { GithubIssue: true, project: true },
+            include: { GithubIssue: true, project: true, tags: true },
           });
-
           if (!todo) throw new Error('Todo not found');
 
           issue = await octokit.rest.issues.update({
@@ -157,7 +159,12 @@ const worker = new Worker(
             body: `${todo.description ?? ''}
           Updated from learn-replicache-prisma app
           `,
-            labels: [todo.project?.name ?? 'no-project'],
+            labels: [
+              todo.project?.name
+                ? `project: ${todo.project.name}`
+                : 'project: none',
+              ...(todo.tags?.map((tag) => tag.name) ?? []),
+            ],
           });
 
           await prismaClient.event.update({
