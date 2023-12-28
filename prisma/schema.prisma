@@ -58,6 +58,16 @@ model Todo {
   Event        Event[]
   projectId    String?
   project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tags         Tag[]
+}
+
+model Tag {
+  id    String  @id @unique
+  name  String
+  color String? @default("fefefe")
+
+  todoId String?
+  todo   Todo?   @relation(fields: [todoId], references: [id])
 }
 
 model GithubIssue {

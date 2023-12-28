@@ -1,6 +1,9 @@
 import { Project } from '@prisma/client';
 import { Trash } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import React from 'react';
+import Select from 'react-select';
+import { DeepReadonlyObject } from 'replicache';
 import { useSubscribe } from 'replicache-react';
 
 import { useReplicache } from '@/hooks/useReplicache';
@@ -14,12 +17,12 @@ export function TodoRow({
   todo,
   idbKey,
 }: {
-  todo: ConvertDate<TodoDetail>;
+  todo: DeepReadonlyObject<ConvertDate<TodoDetail>>;
   idbKey: string;
 }) {
   const rep = useReplicache();
   const spaceId = useSpace();
-  const [project, setProject] = React.useState(todo.projectId ?? '');
+  const project = todo.projectId ?? '';
 
   const projects = useSubscribe(
     rep,
@@ -40,8 +43,30 @@ export function TodoRow({
     { default: [] }
   );
 
+  //#region  //*=========== Tags ===========
+  const tagsOptions = [
+    { label: 'bug', value: 'bug' },
+    { label: 'feature', value: 'feature' },
+    { label: 'enhancement', value: 'enhancement' },
+    { label: 'documentation', value: 'documentation' },
+    { label: 'help wanted', value: 'help wanted' },
+    { label: 'good first issue', value: 'good first issue' },
+    { label: 'invalid', value: 'invalid' },
+    { label: 'question', value: 'question' },
+    { label: 'wontfix', value: 'wontfix' },
+  ];
+  const [tags, setTags] = React.useState<{ label: string; value: string }[]>(
+    []
+  );
+  React.useEffect(() => {
+    setTags(
+      todo.tags?.map((tag) => ({ label: tag.name, value: tag.name })) ?? []
+    );
+  }, [todo.tags]);
+  //#endregion  //*======== Tags ===========
+
   return (
-    <div key={idbKey} className='space-x-4'>
+    <div key={idbKey} className='flex items-center gap-4'>
       <button
         onClick={() => {
           rep?.mutate.todoDelete({
@@ -51,29 +76,62 @@ export function TodoRow({
       >
         <Trash size={15} />
       </button>
-      <span>{todo.title}</span>
-      <select
-        name='project'
-        id='project'
-        value={project}
-        onChange={(e) => {
-          setProject(e.target.value);
-          rep?.mutate.todoUpdate({
-            id: todo.id,
-            title: todo.title,
-            description: todo.description,
-            projectId: e.target.value ?? null,
-          });
-        }}
-      >
-        <option value=''>None</option>
-        {projects.map(([idbKey, project]) => (
-          <option key={idbKey} value={project.id} className='text-orange-400'>
-            {project.name}
-          </option>
-        ))}
-      </select>
-      <span className='text-green-600'>#{todo.GithubIssue?.number}</span>
+      <div>
+        <div className='space-x-4'>
+          <span className='font-mono text-sm text-gray-600'>{todo.id}</span>
+          <span>{todo.title}</span>
+          <span className='text-green-600'>#{todo.GithubIssue?.number}</span>
+          <select
+            name='project'
+            id='project'
+            value={project}
+            onChange={(e) => {
+              rep?.mutate.todoUpdate({
+                id: todo.id,
+                title: todo.title,
+                description: todo.description,
+                projectId: e.target.value === '' ? null : e.target.value,
+              });
+            }}
+          >
+            <option value=''>None</option>
+            {projects.map(([idbKey, project]) => (
+              <option
+                key={idbKey}
+                value={project.id}
+                className='text-orange-400'
+              >
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Select
+          className='mt-1'
+          isMulti
+          closeMenuOnSelect={false}
+          options={tagsOptions}
+          value={tags}
+          onChange={(selected) => setTags(Array.from(selected ?? []))}
+          onMenuClose={() => {
+            const tagsToSend = tags.map((tag) => {
+              const existingTag = todo.tags.find((t) => t.name === tag.value);
+              return existingTag
+                ? existingTag
+                : {
+                    id: nanoid(),
+                    name: tag.value,
+                    todoId: todo.id,
+                  };
+            });
+
+            rep?.mutate.todoUpdate({
+              id: todo.id,
+              tags: tagsToSend,
+            });
+          }}
+        />
+      </div>
     </div>
   );
 }
