@@ -146,7 +146,7 @@ const worker = new Worker(
             include: {
               GithubIssue: true,
               project: true,
-              labelOnIssues: {
+              labelOnTodos: {
                 include: {
                   label: true,
                 },
@@ -173,7 +173,7 @@ const worker = new Worker(
               todo.project?.name
                 ? `project: ${todo.project.name}`
                 : 'project: none',
-              ...todo.labelOnIssues.map((loi) => loi.label.name),
+              ...todo.labelOnTodos.map((loi) => loi.label.name),
             ],
           });
 

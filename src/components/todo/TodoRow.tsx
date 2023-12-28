@@ -43,12 +43,12 @@ export function TodoRow({
   >([]);
   React.useEffect(() => {
     setChosenLabels(
-      (todo.labelOnIssues ?? []).map((l) => ({
+      (todo.labelOnTodos ?? []).map((l) => ({
         label: l.label.name.toLowerCase(),
         value: l.label.name.toLowerCase(),
       }))
     );
-  }, [todo.labelOnIssues]);
+  }, [todo.labelOnTodos]);
   //#endregion  //*======== Labels ===========
 
   const projects = useSubscribe(
@@ -120,10 +120,10 @@ export function TodoRow({
           onMenuClose={() => {
             rep?.mutate.todoUpdate({
               id: todo.id,
-              labelOnIssues: chosenLabels.map((label) => {
+              labelOnTodos: chosenLabels.map((label) => {
                 // check is label exist
-                const existingLabel = todo.labelOnIssues?.find(
-                  (loi) => loi.label.name.toLowerCase() === label.value
+                const existingLabel = todo.labelOnTodos?.find(
+                  (lot) => lot.label.name.toLowerCase() === label.value
                 );
 
                 if (existingLabel) {

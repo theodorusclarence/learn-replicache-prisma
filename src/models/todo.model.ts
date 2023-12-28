@@ -3,7 +3,7 @@ import { Prisma, Todo } from '@prisma/client';
 export type TodoDetail = Prisma.TodoGetPayload<{
   include: {
     GithubIssue: true;
-    labelOnIssues: {
+    labelOnTodos: {
       include: {
         label: true;
       };
@@ -18,4 +18,4 @@ export type TodoCreateArgs = Omit<
 export type TodoDeleteArgs = Pick<Todo, 'id'>;
 
 export type TodoUpdateArgs = Partial<Todo> &
-  Partial<Pick<TodoDetail, 'labelOnIssues'>>;
+  Partial<Pick<TodoDetail, 'labelOnTodos'>>;

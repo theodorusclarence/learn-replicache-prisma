@@ -56,8 +56,8 @@ export class TodoService {
     spaceId: string,
     githubSyncEnabled?: boolean
   ) {
-    const { labelOnIssues, ...rest } = args;
-    const shouldUpdateLabels = Boolean(labelOnIssues);
+    const { labelOnTodos, ...rest } = args;
+    const shouldUpdateLabels = Boolean(labelOnTodos);
 
     const todo = await this.tx.todo.update({
       where: { id: args.id },
@@ -65,10 +65,10 @@ export class TodoService {
         spaceId,
         version,
         ...rest,
-        labelOnIssues: {},
+        labelOnTodos: {},
       },
       include: {
-        labelOnIssues: {
+        labelOnTodos: {
           include: {
             label: true,
           },
@@ -77,13 +77,13 @@ export class TodoService {
     });
 
     if (shouldUpdateLabels) {
-      const labelsToRemove = todo.labelOnIssues?.filter(
-        (loi) =>
-          !labelOnIssues?.some(
-            (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+      const labelsToRemove = todo.labelOnTodos?.filter(
+        (lot) =>
+          !labelOnTodos?.some(
+            (lot2) => lot2.labelId === lot.labelId && lot2.todoId === lot.todoId
           )
       );
-      await this.tx.labelOnIssues.deleteMany({
+      await this.tx.labelOnTodo.deleteMany({
         where: {
           AND: [
             {
@@ -91,17 +91,17 @@ export class TodoService {
             },
             {
               labelId: {
-                in: labelsToRemove?.map((loi) => loi.labelId) ?? [],
+                in: labelsToRemove?.map((lot) => lot.labelId) ?? [],
               },
             },
           ],
         },
       });
 
-      const labelsToAdd = labelOnIssues?.filter(
-        (loi) =>
-          !todo.labelOnIssues?.some(
-            (loi2) => loi2.labelId === loi.labelId && loi2.todoId === loi.todoId
+      const labelsToAdd = labelOnTodos?.filter(
+        (lot) =>
+          !todo.labelOnTodos?.some(
+            (lot2) => lot2.labelId === lot.labelId && lot2.todoId === lot.todoId
           )
       );
       for (const label of labelsToAdd ?? []) {
@@ -113,7 +113,7 @@ export class TodoService {
             id: label.labelId,
             name: label.label.name,
             color: label.label.color,
-            LabelOnIssues: {
+            labelOnTodo: {
               create: {
                 todoId: todo.id,
                 id: label.id,
@@ -121,7 +121,7 @@ export class TodoService {
             },
           },
           update: {
-            LabelOnIssues: {
+            labelOnTodo: {
               connectOrCreate: {
                 where: {
                   label_id_todo_id: {
@@ -215,7 +215,7 @@ export class TodoService {
       },
       include: {
         GithubIssue: true,
-        labelOnIssues: {
+        labelOnTodos: {
           include: {
             label: true,
           },

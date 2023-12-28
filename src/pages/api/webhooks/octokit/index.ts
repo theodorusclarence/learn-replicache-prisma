@@ -106,7 +106,7 @@ export default async function handler(
         },
       },
       include: {
-        labelOnIssues: {
+        labelOnTodos: {
           include: {
             label: true,
           },
@@ -124,19 +124,10 @@ export default async function handler(
       (label) => !label.name.startsWith('project:')
     );
 
-    const labelsToAdd = labels?.filter(
-      (label) =>
-        !todo.labelOnIssues.find(
-          (labelOnIssue) => labelOnIssue.label.name === label.name
-        )
+    const labelsToRemove = todo.labelOnTodos.filter(
+      (lot) => !labels?.find((label) => lot.label.name === label.name)
     );
-
-    const labelsToRemove = todo.labelOnIssues.filter(
-      (labelOnIssue) =>
-        !labels?.find((label) => labelOnIssue.label.name === label.name)
-    );
-
-    await prismaClient.labelOnIssues.deleteMany({
+    await prismaClient.labelOnTodo.deleteMany({
       where: {
         AND: [
           {
@@ -144,13 +135,16 @@ export default async function handler(
           },
           {
             labelId: {
-              in: labelsToRemove.map((labelOnIssue) => labelOnIssue.labelId),
+              in: labelsToRemove.map((lot) => lot.labelId),
             },
           },
         ],
       },
     });
 
+    const labelsToAdd = labels?.filter(
+      (label) => !todo.labelOnTodos.find((lot) => lot.label.name === label.name)
+    );
     for (const label of labelsToAdd ?? []) {
       await prismaClient.label.upsert({
         where: {
@@ -160,7 +154,7 @@ export default async function handler(
           id: nanoid(),
           name: label.name,
           color: label.color,
-          LabelOnIssues: {
+          labelOnTodo: {
             create: {
               todoId: todo.id,
               id: nanoid(),
@@ -168,7 +162,7 @@ export default async function handler(
           },
         },
         update: {
-          LabelOnIssues: {
+          labelOnTodo: {
             create: {
               todoId: todo.id,
               id: nanoid(),

@@ -45,20 +45,20 @@ model User {
 }
 
 model Todo {
-  id            String          @id @unique
-  title         String
-  description   String?
-  completed     Boolean         @default(false)
-  version       Int
-  spaceId       String
-  space         Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  lastModified  DateTime        @updatedAt
-  isDeleted     Boolean         @default(false)
-  GithubIssue   GithubIssue?
-  Event         Event[]
-  projectId     String?
-  project       Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  labelOnIssues LabelOnIssues[]
+  id           String        @id @unique
+  title        String
+  description  String?
+  completed    Boolean       @default(false)
+  version      Int
+  spaceId      String
+  space        Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  lastModified DateTime      @updatedAt
+  isDeleted    Boolean       @default(false)
+  GithubIssue  GithubIssue?
+  Event        Event[]
+  projectId    String?
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  labelOnTodos LabelOnTodo[]
 }
 
 model GithubIssue {
@@ -73,7 +73,7 @@ model GithubIssue {
   @@index([owner, repo, number], name: "owner_repo_number")
 }
 
-model LabelOnIssues {
+model LabelOnTodo {
   id      String @id @unique
   labelId String
   label   Label  @relation(fields: [labelId], references: [id])
@@ -83,13 +83,14 @@ model LabelOnIssues {
   @@unique([labelId, todoId], name: "label_id_todo_id")
   @@index([labelId], name: "label_id")
   @@index([todoId], name: "label_todo_id")
+  @@map("LabelOnTodo")
 }
 
 model Label {
-  id            String          @id @unique
-  name          String          @unique
-  color         String?         @default("#f1f9")
-  LabelOnIssues LabelOnIssues[]
+  id          String        @id @unique
+  name        String        @unique
+  color       String?       @default("#f1f9")
+  labelOnTodo LabelOnTodo[]
 }
 
 model Event {
