@@ -13,7 +13,7 @@ type Actions = {
 export const useSpaceStore = create<State & Actions>()(
   devtools(
     immer((set) => ({
-      spaceId: 'dummy-space-id',
+      spaceId: 'dummy-space-id-01',
       setSpaceId: (spaceId) => set({ spaceId }),
     })),
     {

@@ -3,35 +3,49 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.space.create({
-    data: {
-      version: 0,
-      id: 'dummy-space-id',
-    },
-  });
-  await prisma.space.create({
-    data: {
-      version: 0,
-      id: 'dummy-space-id-2',
-    },
-  });
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.space.deleteMany({});
+      await tx.project.deleteMany({});
+      await tx.client.deleteMany({});
+      await tx.clientGroup.deleteMany({});
+      await tx.space.create({
+        data: {
+          version: 0,
+          id: 'dummy-space-id-01',
+        },
+      });
+      await tx.space.create({
+        data: {
+          version: 0,
+          id: 'dummy-space-id-02',
+        },
+      });
 
-  await prisma.project.create({
-    data: {
-      version: 0,
-      id: 'IzyVQ8Cha4v0TjFtfA7Mo',
-      name: 'project 01',
-      spaceId: 'dummy-space-id',
+      await tx.project.create({
+        data: {
+          version: 0,
+          id: 'dummy-project-id-01',
+          name: 'project 01',
+          spaceId: 'dummy-space-id-01',
+        },
+      });
+      await tx.project.create({
+        data: {
+          version: 0,
+          id: 'dummy-project-id-02',
+          name: 'project 01',
+          spaceId: 'dummy-space-id-02',
+        },
+      });
+      return true;
     },
-  });
-  await prisma.project.create({
-    data: {
-      version: 0,
-      id: 'G7b6uje8qIA6fCHGHr8Rm',
-      name: 'project 01',
-      spaceId: 'dummy-space-id-2',
-    },
-  });
+    {
+      isolationLevel: 'Serializable',
+      maxWait: 5000,
+      timeout: 12000,
+    }
+  );
 }
 
 main()

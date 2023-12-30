@@ -99,10 +99,10 @@ export default function HomePage() {
             </pre>
             <Button
               onClick={() => {
-                if (spaceId === 'dummy-space-id') {
-                  setSpace('dummy-space-id-2');
+                if (spaceId === 'dummy-space-id-01') {
+                  setSpace('dummy-space-id-02');
                 } else {
-                  setSpace('dummy-space-id');
+                  setSpace('dummy-space-id-01');
                 }
               }}
             >

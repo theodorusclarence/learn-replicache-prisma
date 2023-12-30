@@ -20,3 +20,11 @@ export type NormalizePrisma<T> = {
 } & {
   [K in keyof PickNullable<T>]?: T[K] | undefined;
 };
+
+export function isValidBody<T extends Record<string, unknown>>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  body: any,
+  fields: (keyof T)[]
+): body is T {
+  return Object.keys(body).every((key) => fields.includes(key));
+}
