@@ -29,16 +29,15 @@ const worker = new Worker(
 
     try {
       const event = await prismaClient.event.findUnique({
-        where: { id: eventId },
+        where: {
+          id: eventId,
+          status: 'FAILED',
+        },
         include: {
           todo: true,
         },
       });
       if (!event) throw new Error('Event not found');
-      if (event.status === 'PROCESSING')
-        throw new Error('Event already being processed');
-      if (event.status === 'SUCCESS')
-        throw new Error('Event already processed');
 
       await prismaClient.event.update({
         where: {
@@ -115,7 +114,7 @@ const worker = new Worker(
   },
   {
     connection: redis_connection,
-    concurrency: 50,
+    concurrency: 5,
     removeOnComplete: { count: 1000 },
     removeOnFail: { count: 5000 },
   }

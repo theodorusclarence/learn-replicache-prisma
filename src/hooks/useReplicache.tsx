@@ -54,12 +54,9 @@ export const useLoadReplicache = () => {
     ) {
       // Listen for pokes, and pull whenever we get one.
       pusherJs.logToConsole = true;
-      const pusher = new pusherJs(
-        process.env.NEXT_PUBLIC_PUSHER_KEY as string,
-        {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
-        }
-      );
+      const pusher = new pusherJs(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      });
       const channel = pusher.subscribe('default');
       channel.bind('poke', () => {
         void r.pull();
