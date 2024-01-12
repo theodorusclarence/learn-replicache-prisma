@@ -8,8 +8,9 @@ import { ClientService } from '@/lib/server/services/client.service';
 import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 
+import { TaskCreatedPublisher } from '@/events/publishers/task-created-publisher';
+import { natsWrapper } from '@/utils/server/nats-wrapper';
 import { prismaClient } from '@/utils/server/prisma';
-import { octokitQueue } from '@/workers/octokit.worker';
 
 const pushRequestSchema = z.object({
   profileID: z.string(),
@@ -174,17 +175,14 @@ export default async function handler(
     });
     console.info('events in queue (push)', JSON.stringify(events));
 
-    await octokitQueue.addBulk(
-      events.map((event) => {
-        return {
-          name: event.type,
-          data: {
-            todoId: event.todoId,
-            eventId: event.id,
-          },
-        };
-      })
-    );
+    events.forEach(async (event) => {
+      if (event.type === 'CREATE_ISSUE') {
+        await new TaskCreatedPublisher(natsWrapper.client).publish({
+          todoId: event.todoId,
+          eventId: event.id,
+        });
+      }
+    });
     //#endregion  //*======== Process Event to Queue ===========
 
     sendPoke();
