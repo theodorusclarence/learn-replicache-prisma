@@ -95,8 +95,8 @@ export default function HomePage() {
       <main>
         <section>
           <div className='layout min-h-screen py-20'>
-            <h1>Original Page</h1>
-            <Link href='/copycat'>go to /copycat</Link>
+            <h1>Copycat Page</h1>
+            <Link href='/'>back to '/'</Link>
             <pre className='mt-4 overflow-x-auto text-xs'>
               {JSON.stringify(spaceId, null, 2)}
             </pre>
