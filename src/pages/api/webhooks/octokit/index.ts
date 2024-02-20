@@ -29,7 +29,7 @@ export default async function handler(
 
   const space = await prismaClient.space.findFirst({
     where: {
-      id: 'dummy-space-id',
+      id: 'dummy-space-id-01',
     },
   });
 

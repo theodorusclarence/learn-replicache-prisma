@@ -9,7 +9,7 @@ import { ClientGroupService } from '@/lib/server/services/clientGroup.service';
 import { SpaceService } from '@/lib/server/services/space.service';
 
 import { prismaClient } from '@/utils/server/prisma';
-import { octokitQueue } from '@/workers/octokit.worker';
+import eventBus from '@/utils/server/qstash';
 
 const pushRequestSchema = z.object({
   profileID: z.string(),
@@ -174,17 +174,12 @@ export default async function handler(
     });
     console.info('events in queue (push)', JSON.stringify(events));
 
-    await octokitQueue.addBulk(
-      events.map((event) => {
-        return {
-          name: event.type,
-          data: {
-            todoId: event.todoId,
-            eventId: event.id,
-          },
-        };
-      })
-    );
+    for (const event of events) {
+      eventBus.sendOctokitEvent({
+        eventId: event.id,
+        todoId: event.todoId,
+      });
+    }
     //#endregion  //*======== Process Event to Queue ===========
 
     sendPoke();
@@ -201,9 +196,9 @@ export default async function handler(
 
 export async function sendPoke() {
   const pusher = new Pusher({
-    appId: process.env.NEXT_PUBLIC_PUSHER_APP_ID as string,
+    appId: process.env.PUSHER_APP_ID as string,
     key: process.env.NEXT_PUBLIC_PUSHER_KEY as string,
-    secret: process.env.NEXT_PUBLIC_PUSHER_SECRET as string,
+    secret: process.env.PUSHER_SECRET as string,
     cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
     useTLS: true,
   });
